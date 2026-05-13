@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D 5e Character Creator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   RESET & BASE
+================================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+button { cursor: pointer; border: none; background: none; font: inherit; }
+
+/* ================================================================
+   DESIGN TOKENS
+================================================================ */
+:root {
+  --bg-primary:   #0d0d1a;
+  --bg-secondary: #13132a;
+  --bg-tertiary:  #1a1a35;
+  --bg-card:      #181830;
+  --bg-hover:     #202040;
+
+  --border:       #252550;
+  --border-light: #353565;
+
+  --text-primary:   #e8e0d0;
+  --text-secondary: #9a95b5;
+  --text-muted:     #55557a;
+
+  --gold:       #c9aa71;
+  --gold-light: #e8c87a;
+  --gold-dark:  #7a6030;
+  --gold-glow:  rgba(201,170,113,0.12);
+
+  --green: #5ab85a;
+
+  --font-heading: 'Cinzel', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius:    8px;
+  --radius-lg: 12px;
+
+  --shadow:    0 4px 20px rgba(0,0,0,0.45);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+
+  --transition: 180ms ease;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+h1,h2,h3,h4 { font-family: var(--font-heading); font-weight: 600; line-height: 1.2; }
+h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+h2 { font-size: clamp(1.3rem, 3vw, 1.9rem); }
+h3 { font-size: 1.15rem; }
+
+/* ================================================================
+   BUTTONS
+================================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.btn-primary { background: var(--gold); color: #0d0d1a; }
+.btn-primary:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-1px); }
+.btn-primary:disabled { background: var(--border-light); color: var(--text-muted); cursor: not-allowed; }
+
+.btn-outline { border: 1px solid var(--border-light); color: var(--text-secondary); }
+.btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+.btn-ghost { color: var(--text-secondary); padding: 7px 11px; border-radius: var(--radius-sm); }
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-hover); }
+.btn-ghost.danger:hover { color: #e05050; background: rgba(80,0,0,0.3); }
+
+/* ================================================================
+   SITE HEADER (home)
+================================================================ */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,13,26,0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.site-logo {
+  display: flex; align-items: center; gap: 11px;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--gold);
+  text-decoration: none;
+}
+.site-logo svg { width: 28px; height: 28px; }
+
+/* ================================================================
+   HOME PAGE
+================================================================ */
+.home-main {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 44px 24px 80px;
+}
+.home-top {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+  margin-bottom: 36px;
+}
+.home-top h1 { color: var(--gold); }
+
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.char-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.char-card:hover {
+  border-color: var(--gold-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+.char-avatar {
+  width: 100%; aspect-ratio: 4/3;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+}
+.char-avatar img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.char-card-body { padding: 14px 16px 8px; flex: 1; }
+.char-name { font-family: var(--font-heading); font-size: 1rem; color: var(--text-primary); margin-bottom: 3px; }
+.char-subtitle { font-size: 0.8rem; color: var(--text-secondary); }
+
+.char-badge {
+  position: absolute; top: 9px; right: 9px;
+  background: rgba(13,13,26,0.85);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: 0.7rem;
+  color: var(--gold);
+  backdrop-filter: blur(4px);
+}
+.char-card-actions {
+  display: flex; gap: 6px; align-items: center;
+  padding: 8px 10px 12px;
+}
+
+/* Empty state */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 72px 24px;
+}
+.empty-state-icon { font-size: 3.5rem; margin-bottom: 14px; opacity: 0.35; }
+.empty-state h3 { font-family: var(--font-heading); color: var(--text-secondary); margin-bottom: 6px; }
+.empty-state p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 22px; }
+
+/* ================================================================
+   WIZARD SHELL
+================================================================ */
+.wizard-layout { min-height: 100vh; display: flex; flex-direction: column; }
+
+.wizard-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,13,26,0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.wizard-nav {
+  height: 60px; padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.wizard-title { font-family: var(--font-heading); font-size: 1rem; color: var(--gold); }
+
+.wizard-steps-bar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 20px 10px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.wizard-steps-bar::-webkit-scrollbar { display: none; }
+
+.step-pip {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.72rem; font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 20px;
+  transition: var(--transition);
+}
+.step-pip .pip-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border-light);
+  transition: var(--transition);
+}
+.step-pip.active { color: var(--gold); }
+.step-pip.active .pip-dot { background: var(--gold); box-shadow: 0 0 6px var(--gold-dark); }
+.step-pip.done { color: var(--text-secondary); }
+.step-pip.done .pip-dot { background: var(--text-secondary); }
+.step-sep { color: var(--border-light); font-size: 0.7rem; padding: 0 1px; }
+
+.wizard-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.wizard-footer {
+  position: sticky; bottom: 0; z-index: 50;
+  background: rgba(13,13,26,0.97);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.footer-hint { font-size: 0.82rem; color: var(--text-secondary); }
+
+/* ================================================================
+   RACE SELECTION
+================================================================ */
+.race-step {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+@media (max-width: 700px) {
+  .race-step { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .race-list-panel { max-height: 260px; border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+.race-list-panel {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 14px 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.panel-label {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 4px 10px 8px;
+}
+
+.race-option {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  background: transparent;
+  text-align: left; width: 100%;
+  color: var(--text-primary);
+}
+.race-option:hover { background: var(--bg-hover); border-color: var(--border-light); }
+.race-option.selected { background: var(--gold-glow); border-color: var(--gold-dark); }
+
+.race-opt-icon { font-size: 1.7rem; line-height: 1; flex-shrink: 0; }
+.race-opt-name { font-weight: 600; font-size: 0.9rem; }
+.race-opt-tag  { font-size: 0.75rem; color: var(--text-secondary); margin-top: 1px; }
+.race-option.selected .race-opt-tag { color: var(--gold-dark); }
+
+/* Detail panel */
+.race-detail-panel {
+  overflow-y: auto;
+  padding: 32px 36px;
+}
+@media (max-width: 700px) { .race-detail-panel { padding: 20px 16px; } }
+
+.race-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 380px; gap: 12px;
+  color: var(--text-muted); text-align: center;
+}
+.race-empty-icon { font-size: 2.5rem; opacity: 0.25; }
+.race-empty p { font-size: 0.88rem; max-width: 240px; }
+
+.detail-header { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 28px; }
+.detail-icon { font-size: 3rem; line-height: 1; }
+.detail-title { font-family: var(--font-heading); font-size: 1.8rem; color: var(--gold); }
+.detail-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.meta-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 11px;
+  font-size: 0.78rem; color: var(--text-secondary);
+}
+.meta-pill svg { width: 12px; height: 12px; }
+
+.section { margin-bottom: 24px; }
+.section-label {
+  font-size: 0.67rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--gold);
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.asi-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.asi-chip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 5px 13px;
+  font-size: 0.88rem; font-weight: 600;
+}
+.asi-chip .bonus { color: var(--green); margin-left: 4px; }
+
+.trait-list { display: flex; flex-direction: column; gap: 7px; }
+.trait-item {
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: var(--transition);
+}
+.trait-item:hover { border-color: var(--border-light); }
+.trait-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.trait-name { font-weight: 600; font-size: 0.88rem; }
+.trait-chevron { color: var(--text-muted); transition: transform var(--transition); }
+.trait-chevron svg { width: 14px; height: 14px; display: block; }
+.trait-item.open .trait-chevron { transform: rotate(90deg); }
+.trait-body {
+  display: none;
+  padding: 0 14px 12px;
+  font-size: 0.83rem; color: var(--text-secondary);
+  line-height: 1.65;
+}
+.trait-item.open .trait-body { display: block; }
+.trait-loading { color: var(--text-muted); font-style: italic; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3px 11px;
+  font-size: 0.82rem; color: var(--text-secondary);
+}
+.chip.dashed { border-style: dashed; color: var(--gold-dark); }
+
+/* Subrace picker */
+.subrace-grid { display: flex; flex-direction: column; gap: 9px; }
+.subrace-card {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left; width: 100%; color: var(--text-primary);
+}
+.subrace-card:hover { border-color: var(--border-light); background: var(--bg-hover); }
+.subrace-card.selected { border-color: var(--gold); background: var(--gold-glow); }
+.subrace-name { font-weight: 600; font-size: 0.92rem; margin-bottom: 3px; }
+.subrace-asis { font-size: 0.8rem; color: var(--green); margin-bottom: 4px; }
+.subrace-traits { font-size: 0.78rem; color: var(--text-secondary); }
+
+/* Loading / error */
+.loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 60px; gap: 14px;
+  color: var(--text-muted); flex: 1;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box { padding: 40px; text-align: center; color: #e05050; }
+.error-box p { margin-bottom: 14px; font-size: 0.88rem; }
+
+/* ================================================================
+   TOAST
+================================================================ */
+#toast-root {
+  position: fixed; bottom: 20px; right: 20px;
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 7px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 0.87rem;
+  box-shadow: var(--shadow);
+  animation: toastIn 0.18s ease;
+  pointer-events: all;
+}
+.toast.success { border-color: #2a5e2a; color: var(--green); }
+.toast.error   { border-color: #5e1a1a; color: #e05050; }
+@keyframes toastIn {
+  from { transform: translateX(16px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-root"></div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   CONSTANTS
+================================================================ */
+const API_BASE    = 'https://www.dnd5eapi.co/api/2014';
+const STORE_KEY   = 'dnd5e-characters';
+const CACHE_KEY   = 'dnd5e-api-cache';
+
+const STEPS = [
+  { id: 'race',       label: 'Race' },
+  { id: 'class',      label: 'Class' },
+  { id: 'abilities',  label: 'Abilities' },
+  { id: 'background', label: 'Background' },
+  { id: 'choices',    label: 'Choices' },
+  { id: 'skills',     label: 'Skills' },
+  { id: 'equipment',  label: 'Equipment' },
+  { id: 'details',    label: 'Details' },
+];
+
+const RACE_ICONS = {
+  dragonborn: '🐉', dwarf: '⛏️', elf: '🌿', gnome: '🔮',
+  'half-elf': '✨', 'half-orc': '⚔️', halfling: '🍀',
+  human: '👤', tiefling: '😈',
+};
+
+const RACE_TAGS = {
+  dragonborn: 'Proud dragon-blooded warriors',
+  dwarf:      'Stout and resilient craftspeople',
+  elf:        'Ancient and graceful wanderers',
+  gnome:      'Curious inventors and tricksters',
+  'half-elf': 'Adaptable children of two worlds',
+  'half-orc': 'Fierce and enduring survivors',
+  halfling:   'Lucky and lighthearted wanderers',
+  human:      'Ambitious and versatile mortals',
+  tiefling:   'Infernal-touched outlanders',
+};
+
+const ABILITY_FULL = {
+  str: 'Strength', dex: 'Dexterity', con: 'Constitution',
+  int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma',
+};
+
+/* ================================================================
+   SVG ICONS
+================================================================ */
+const I = {
+  d20: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/>
+    <path d="M3 7l9 2.5L21 7"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+  edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>`,
+  back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12H5M12 19l-7-7 7-7"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>`,
+  speed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+  ruler: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <path d="M3 12l3-3 3 3 3-3 3 3 3-3 3 3M3 18l3-3 3 3 3-3 3 3 3-3 3 3"/></svg>`,
+};
+
+/* ================================================================
+   API LAYER  (fetch + localStorage cache)
+================================================================ */
+const Api = {
+  _mem: null,
+  _cache() {
+    if (!this._mem) {
+      try { this._mem = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
+      catch { this._mem = {}; }
+    }
+    return this._mem;
+  },
+  _flush() {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(this._mem)); }
+    catch { /* storage full — cache misses are fine */ }
+  },
+  async get(path) {
+    const c = this._cache();
+    if (c[path]) return c[path];
+    const r = await fetch(API_BASE + path);
+    if (!r.ok) throw new Error(`HTTP ${r.status} — ${path}`);
+    const data = await r.json();
+    c[path] = data;
+    this._flush();
+    return data;
+  },
+};
+
+/* ================================================================
+   CHARACTER STORE
+================================================================ */
+const Store = {
+  all() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+    catch { return []; }
+  },
+  one(id) { return this.all().find(c => c.id === id) || null; },
+  save(char) {
+    char.updatedAt = Date.now();
+    const list = this.all();
+    const i = list.findIndex(c => c.id === char.id);
+    if (i >= 0) list[i] = char; else list.unshift(char);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
+    catch { Toast.show('Storage full — delete a character to free space.', 'error'); }
+    return char;
+  },
+  del(id) {
+    const list = this.all().filter(c => c.id !== id);
+    localStorage.setItem(STORE_KEY, JSON.stringify(list));
+  },
+  blank() {
+    return {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      step: 'race',         // current creation step
+      portrait: null,       // base64 or null
+      name: '',
+      alignment: '',
+      personalityTraits: [],
+      ideal: '',
+      bond: '',
+      flaw: '',
+      // Choices
+      race:       null,     // { index, name, speed, size, ability_bonuses, traits, languages, language_options, starting_proficiencies, subraces }
+      subrace:    null,     // { index, name, ability_bonuses, racial_traits } or null
+      klass:      null,     // 'class' is a reserved word
+      background: null,
+      abilityMethod: null,  // 'standard' | 'pointbuy' | 'roll'
+      baseScores: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 },
+      skillProficiencies: [],
+      bonusLanguages: [],
+      cantrips:     [],
+      level1Spells: [],
+      subclassChoice: null,
+      fightingStyle:  null,
+      equipment: [],
+      useGold: false,
+      startGold: 0,
+    };
+  },
+};
+
+/* ================================================================
+   TOAST
+================================================================ */
+const Toast = {
+  show(msg, type = 'info', ms = 3200) {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.getElementById('toast-root').appendChild(el);
+    setTimeout(() => el.remove(), ms);
+  },
+};
+
+/* ================================================================
+   HELPERS
+================================================================ */
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function asiLabel(bonuses) {
+  if (!bonuses?.length) return '';
+  return bonuses.map(b => {
+    const name = ABILITY_FULL[b.ability_score.index] || b.ability_score.name;
+    return `${name} +${b.bonus}`;
+  }).join(', ');
+}
+
+/* ================================================================
+   ROUTER / APP
+================================================================ */
+const App = {
+  page: 'home',
+  ctx: {},
+
+  go(page, ctx = {}) {
+    this.page = page;
+    this.ctx  = ctx;
+    document.getElementById('app').innerHTML = '';
+    window.scrollTo(0, 0);
+    this.render();
+  },
+
+  render() {
+    const root = document.getElementById('app');
+    switch (this.page) {
+      case 'home': HomeView.render(root); break;
+      case 'race': RaceView.render(root, this.ctx); break;
+      default:
+        root.innerHTML = `<div class="loading"><p>Page not found</p></div>`;
+    }
+  },
+
+  newCharacter() {
+    const c = Store.blank();
+    Store.save(c);
+    App.go('race', { charId: c.id });
+  },
+
+  openCharacter(id) {
+    const c = Store.one(id);
+    if (!c) return;
+    // Route to the character's current step (race is the only built one so far)
+    const builtSteps = ['race'];
+    const dest = builtSteps.includes(c.step) ? c.step : 'race';
+    App.go(dest, { charId: id });
+  },
+
+  deleteCharacter(id) {
+    if (!confirm('Delete this character? This cannot be undone.')) return;
+    Store.del(id);
+    App.render();
+  },
+};
+
+/* ================================================================
+   HOME VIEW
+================================================================ */
+const HomeView = {
+  render(root) {
+    const chars = Store.all();
+    root.innerHTML = `
+      <header class="site-header">
+        <div class="site-logo">${I.d20}<span>D&amp;D 5e Creator</span></div>
+      </header>
+      <main class="home-main">
+        <div class="home-top">
+          <h1>Your Characters</h1>
+          <button class="btn btn-primary" onclick="App.newCharacter()">
+            ${I.plus} New Character
+          </button>
+        </div>
+        <div class="char-grid">
+          ${chars.length ? chars.map(c => this._card(c)).join('') : this._empty()}
+        </div>
+      </main>`;
+  },
+
+  _empty() {
+    return `
+      <div class="empty-state">
+        <div class="empty-state-icon">🎲</div>
+        <h3>No Characters Yet</h3>
+        <p>Begin your adventure by creating your first character.</p>
+        <button class="btn btn-primary" onclick="App.newCharacter()">
+          ${I.plus} Create First Character
+        </button>
+      </div>`;
+  },
+
+  _card(c) {
+    const icon    = RACE_ICONS[c.race?.index] || '🎲';
+    const name    = c.name || 'Unnamed Adventurer';
+    const done    = c.step === 'complete';
+    const race    = c.race?.name  || null;
+    const klass   = c.klass?.name || null;
+    const subline = race
+      ? (klass ? `${race} ${klass}` : `${race} · choose class next`)
+      : 'In progress · choose race';
+
+    return `
+      <div class="char-card" onclick="App.openCharacter('${c.id}')">
+        <div class="char-avatar">${icon}</div>
+        ${!done ? `<div class="char-badge">In Progress</div>` : ''}
+        <div class="char-card-body">
+          <div class="char-name">${esc(name)}</div>
+          <div class="char-subtitle">${esc(subline)}</div>
+        </div>
+        <div class="char-card-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost" style="font-size:0.78rem" onclick="App.openCharacter('${c.id}')">
+            ${I.edit} Edit
+          </button>
+          <button class="btn btn-ghost danger" style="font-size:0.78rem;margin-left:auto"
+                  onclick="App.deleteCharacter('${c.id}')">
+            ${I.trash}
+          </button>
+        </div>
+      </div>`;
+  },
+};
+
+/* ================================================================
+   WIZARD SHELL HELPER
+================================================================ */
+function wizardShell(activeStepId, bodyHtml, footerHtml) {
+  const activeIdx = STEPS.findIndex(s => s.id === activeStepId);
+  const pips = STEPS.map((s, i) => {
+    const cls = i === activeIdx ? 'active' : i < activeIdx ? 'done' : '';
+    return `${i > 0 ? `<span class="step-sep">›</span>` : ''}
+      <span class="step-pip ${cls}"><span class="pip-dot"></span>${s.label}</span>`;
+  }).join('');
+
+  return `
+    <div class="wizard-layout">
+      <header class="wizard-header">
+        <nav class="wizard-nav">
+          <button class="btn btn-ghost" onclick="App.go('home')">${I.back} Home</button>
+          <span class="wizard-title">Character Creation</span>
+          <div style="width:72px"></div>
+        </nav>
+        <div class="wizard-steps-bar">${pips}</div>
+      </header>
+      <div class="wizard-body" id="wizard-body">${bodyHtml}</div>
+      <footer class="wizard-footer">
+        <span class="footer-hint" id="footer-hint"></span>
+        ${footerHtml}
+      </footer>
+    </div>`;
+}
+
+/* ================================================================
+   RACE VIEW
+================================================================ */
+const RaceView = {
+  // Module-level state for this step
+  charId:          null,
+  allRaces:        [],           // full race objects from API
+  subraceCache:    {},           // index → full subrace object
+  selectedRace:    null,
+  selectedSubrace: null,
+  traitDescCache:  {},           // trait index → desc string
+
+  render(root, { charId }) {
+    this.charId = charId;
+    root.innerHTML = wizardShell(
+      'race',
+      `<div class="loading"><div class="spinner"></div><span>Loading races…</span></div>`,
+      `<button class="btn btn-primary" id="continue-btn" disabled onclick="RaceView.save()">
+         Save &amp; Continue →
+       </button>`,
+    );
+    this._load();
+  },
+
+  async _load() {
+    try {
+      const char = Store.one(this.charId);
+      const list = await Api.get('/races');
+
+      // Fetch all race details in parallel (9 races — worth the upfront cost for instant switching)
+      const races = await Promise.all(list.results.map(r => Api.get(`/races/${r.index}`)));
+      races.sort((a, b) => a.name.localeCompare(b.name));
+
+      this.allRaces        = races;
+      this.subraceCache    = {};
+      this.traitDescCache  = {};
+      this.selectedRace    = null;
+      this.selectedSubrace = null;
+
+      // Pre-load subraces if character already has a race with subraces
+      if (char.race?.subraces?.length) {
+        await this._loadSubraces(char.race.index);
+      }
+
+      // Restore previous selections
+      if (char.race) {
+        this.selectedRace    = races.find(r => r.index === char.race.index) || null;
+        this.selectedSubrace = char.subrace
+          ? (this.subraceCache[char.subrace.index] || null)
+          : null;
+      }
+
+      this._renderPanels();
+    } catch (e) {
+      document.getElementById('wizard-body').innerHTML = `
+        <div class="error-box">
+          <p>Failed to load races: ${esc(e.message)}</p>
+          <button class="btn btn-outline" onclick="RaceView._load()">Retry</button>
+        </div>`;
+    }
+  },
+
+  async _loadSubraces(raceIndex) {
+    const race = this.allRaces.find(r => r.index === raceIndex);
+    if (!race?.subraces?.length) return;
+    const subs = await Promise.all(race.subraces.map(s => Api.get(`/subraces/${s.index}`)));
+    subs.forEach(s => { this.subraceCache[s.index] = s; });
+  },
+
+  _renderPanels() {
+    const char = Store.one(this.charId);
+    document.getElementById('wizard-body').innerHTML = `
+      <div class="race-step">
+        <div class="race-list-panel" id="race-list">
+          <div class="panel-label">Choose Your Race</div>
+          ${this.allRaces.map(r => `
+            <button class="race-option ${this.selectedRace?.index === r.index ? 'selected' : ''}"
+                    data-ridx="${r.index}"
+                    onclick="RaceView.pickRace('${r.index}')">
+              <span class="race-opt-icon">${RACE_ICONS[r.index] || '🎲'}</span>
+              <span>
+                <div class="race-opt-name">${esc(r.name)}</div>
+                <div class="race-opt-tag">${esc(RACE_TAGS[r.index] || '')}</div>
+              </span>
+            </button>`).join('')}
+        </div>
+        <div class="race-detail-panel" id="race-detail">
+          ${this.selectedRace ? this._detailHtml(this.selectedRace) : this._emptyDetail()}
+        </div>
+      </div>`;
+    this._syncFooter();
+  },
+
+  _emptyDetail() {
+    return `<div class="race-empty">
+      <div class="race-empty-icon">⚔️</div>
+      <p>Select a race from the list to see its traits and abilities.</p>
+    </div>`;
+  },
+
+  async pickRace(raceIndex) {
+    const race = this.allRaces.find(r => r.index === raceIndex);
+    if (!race) return;
+
+    this.selectedRace    = race;
+    this.selectedSubrace = null;
+
+    // Highlight selected in list
+    document.querySelectorAll('.race-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.ridx === raceIndex);
+    });
+
+    // Show spinner in detail while loading subraces
+    const detail = document.getElementById('race-detail');
+    detail.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+
+    if (race.subraces?.length) {
+      await this._loadSubraces(raceIndex);
+    }
+
+    detail.innerHTML = this._detailHtml(race);
+    detail.scrollTop = 0;
+    this._syncFooter();
+  },
+
+  _detailHtml(race) {
+    const subraces = (race.subraces || [])
+      .map(s => this.subraceCache[s.index])
+      .filter(Boolean);
+    const hasSubraces = race.subraces?.length > 0;
+
+    return `
+      <div class="detail-header">
+        <span class="detail-icon">${RACE_ICONS[race.index] || '🎲'}</span>
+        <div>
+          <h2 class="detail-title">${esc(race.name)}</h2>
+          <div class="detail-meta">
+            <span class="meta-pill">${I.speed} ${race.speed} ft</span>
+            <span class="meta-pill">${I.ruler} ${esc(race.size || 'Medium')}</span>
+          </div>
+        </div>
+      </div>
+
+      ${race.ability_bonuses?.length ? `
+        <div class="section">
+          <div class="section-label">Ability Score Increases</div>
+          <div class="asi-row">
+            ${race.ability_bonuses.map(b => `
+              <div class="asi-chip">
+                ${esc(ABILITY_FULL[b.ability_score.index] || b.ability_score.name)}
+                <span class="bonus">+${b.bonus}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${race.traits?.length ? `
+        <div class="section">
+          <div class="section-label">Racial Traits</div>
+          <div class="trait-list">
+            ${race.traits.map(t => `
+              <div class="trait-item" id="ti-${t.index}">
+                <div class="trait-header" onclick="RaceView.toggleTrait('${t.index}')">
+                  <span class="trait-name">${esc(t.name)}</span>
+                  <span class="trait-chevron">${I.chevron}</span>
+                </div>
+                <div class="trait-body" id="tb-${t.index}">
+                  <span class="trait-loading">Loading…</span>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${race.languages?.length ? `
+        <div class="section">
+          <div class="section-label">Languages</div>
+          <div class="chip-row">
+            ${race.languages.map(l => `<span class="chip">${esc(l.name)}</span>`).join('')}
+            ${race.language_options?.choose
+              ? `<span class="chip dashed">+ ${race.language_options.choose} of your choice</span>`
+              : ''}
+          </div>
+        </div>` : ''}
+
+      ${race.starting_proficiencies?.length ? `
+        <div class="section">
+          <div class="section-label">Proficiencies</div>
+          <div class="chip-row">
+            ${race.starting_proficiencies.map(p => `<span class="chip">${esc(p.name)}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${hasSubraces ? `
+        <div class="section">
+          <div class="section-label">Choose Subrace</div>
+          ${subraces.length === 0
+            ? `<div class="loading" style="padding:20px"><div class="spinner"></div></div>`
+            : `<div class="subrace-grid">
+                ${subraces.map(s => {
+                  const sel = this.selectedSubrace?.index === s.index;
+                  return `
+                    <button class="subrace-card ${sel ? 'selected' : ''}"
+                            data-sidx="${s.index}"
+                            onclick="RaceView.pickSubrace('${s.index}')">
+                      <div class="subrace-name">${esc(s.name)}</div>
+                      ${s.ability_bonuses?.length
+                        ? `<div class="subrace-asis">${esc(asiLabel(s.ability_bonuses))}</div>`
+                        : ''}
+                      ${s.racial_traits?.length
+                        ? `<div class="subrace-traits">Traits: ${s.racial_traits.map(t => t.name).join(', ')}</div>`
+                        : ''}
+                    </button>`;
+                }).join('')}
+              </div>`}
+        </div>` : ''}`;
+  },
+
+  async toggleTrait(traitIndex) {
+    const item = document.getElementById(`ti-${traitIndex}`);
+    if (!item) return;
+    const wasOpen = item.classList.contains('open');
+    item.classList.toggle('open', !wasOpen);
+
+    if (!wasOpen) {
+      const body = document.getElementById(`tb-${traitIndex}`);
+      if (!body || !body.querySelector('.trait-loading')) return;
+      if (this.traitDescCache[traitIndex]) {
+        body.textContent = this.traitDescCache[traitIndex];
+        return;
+      }
+      try {
+        const data = await Api.get(`/traits/${traitIndex}`);
+        const desc = data.desc?.join('\n\n') || 'No description available.';
+        this.traitDescCache[traitIndex] = desc;
+        if (body) body.textContent = desc;
+      } catch {
+        if (body) body.textContent = 'Could not load description.';
+      }
+    }
+  },
+
+  pickSubrace(subraceIndex) {
+    this.selectedSubrace = this.subraceCache[subraceIndex] || null;
+    document.querySelectorAll('.subrace-card').forEach(el => {
+      el.classList.toggle('selected', el.dataset.sidx === subraceIndex);
+    });
+    this._syncFooter();
+  },
+
+  _syncFooter() {
+    const btn  = document.getElementById('continue-btn');
+    const hint = document.getElementById('footer-hint');
+    if (!btn) return;
+
+    const race        = this.selectedRace;
+    const needsSub    = race?.subraces?.length > 0;
+    const hasValidSub = !needsSub || this.selectedSubrace !== null;
+    const ready       = !!race && hasValidSub;
+
+    btn.disabled = !ready;
+
+    if (!race) {
+      hint.textContent = 'Select a race to continue.';
+    } else if (needsSub && !hasValidSub) {
+      hint.textContent = `Choose a ${race.name} subrace to continue.`;
+    } else {
+      const sub = this.selectedSubrace ? ` · ${this.selectedSubrace.name}` : '';
+      hint.textContent = `${race.name}${sub} — ready!`;
+    }
+  },
+
+  save() {
+    const race = this.selectedRace;
+    if (!race) return;
+
+    const char = Store.one(this.charId);
+    if (!char) return;
+
+    // Persist only the fields we need (avoid bloating localStorage with full API dumps)
+    char.race = {
+      index:                  race.index,
+      name:                   race.name,
+      speed:                  race.speed,
+      size:                   race.size,
+      ability_bonuses:        race.ability_bonuses || [],
+      traits:                 race.traits || [],
+      languages:              race.languages || [],
+      language_options:       race.language_options || null,
+      starting_proficiencies: race.starting_proficiencies || [],
+      subraces:               race.subraces || [],
+    };
+
+    const sr = this.selectedSubrace;
+    char.subrace = sr ? {
+      index:          sr.index,
+      name:           sr.name,
+      ability_bonuses: sr.ability_bonuses || [],
+      racial_traits:  sr.racial_traits || [],
+    } : null;
+
+    char.step = 'class';  // advance to next step
+    Store.save(char);
+    Toast.show(`${race.name} saved!`, 'success');
+    App.go('home');
+  },
+};
+
+/* ================================================================
+   INIT
+================================================================ */
+App.go('home');
+</script>
+</body>
+</html>

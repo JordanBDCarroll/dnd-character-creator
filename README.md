@@ -146,8 +146,11 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - Race selection step: all 9 SRD races, subraces, trait details (lazy-loaded), ASIs, languages, proficiencies
 - Save to `localStorage`, character shows on home page with race icon
 
+### ✅ v1 — class selection (untested against live API)
+- All 12 SRD classes with hit die, saves, proficiencies, skill choices, starting equipment, spellcasting ability
+- Race step now continues into class step; changing class clears class-dependent choices
+
 ### 🔜 Next
-- v1: Class selection step
 - v2: Ability scores (all three methods)
 - v3: Background selection
 - v4: Class-specific choices (spells, domains, etc.)

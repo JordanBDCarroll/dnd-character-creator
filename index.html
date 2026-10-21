@@ -485,6 +485,27 @@ const RACE_TAGS = {
   tiefling:   'Infernal-touched outlanders',
 };
 
+const CLASS_ICONS = {
+  barbarian: '🪓', bard: '🎶', cleric: '☀️', druid: '🌳',
+  fighter: '⚔️', monk: '👊', paladin: '🛡️', ranger: '🏹',
+  rogue: '🗡️', sorcerer: '🔥', warlock: '👁️', wizard: '📖',
+};
+
+const CLASS_TAGS = {
+  barbarian: 'Raging primal warriors',
+  bard:      'Inspiring magical performers',
+  cleric:    'Divine champions of the gods',
+  druid:     'Shapeshifting guardians of nature',
+  fighter:   'Masters of weapons and armor',
+  monk:      'Disciplined martial artists',
+  paladin:   'Holy warriors bound by oath',
+  ranger:    'Hunters of the wild frontier',
+  rogue:     'Cunning masters of stealth',
+  sorcerer:  'Innate wielders of raw magic',
+  warlock:   'Pact-bound seekers of forbidden power',
+  wizard:    'Scholars of the arcane arts',
+};
+
 const ABILITY_FULL = {
   str: 'Strength', dex: 'Dexterity', con: 'Constitution',
   int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma',
@@ -644,7 +665,8 @@ const App = {
     const root = document.getElementById('app');
     switch (this.page) {
       case 'home': HomeView.render(root); break;
-      case 'race': RaceView.render(root, this.ctx); break;
+      case 'race':  RaceView.render(root, this.ctx); break;
+      case 'class': ClassView.render(root, this.ctx); break;
       default:
         root.innerHTML = `<div class="loading"><p>Page not found</p></div>`;
     }
@@ -659,8 +681,8 @@ const App = {
   openCharacter(id) {
     const c = Store.one(id);
     if (!c) return;
-    // Route to the character's current step (race is the only built one so far)
-    const builtSteps = ['race'];
+    // Route to the character's current step (race and class are built so far)
+    const builtSteps = ['race', 'class'];
     const dest = builtSteps.includes(c.step) ? c.step : 'race';
     App.go(dest, { charId: id });
   },
@@ -1066,9 +1088,209 @@ const RaceView = {
       racial_traits:  sr.racial_traits || [],
     } : null;
 
-    char.step = 'class';  // advance to next step
+    // Advance, but never move a character backwards if they are re-editing race
+    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'class')) {
+      char.step = 'class';
+    }
     Store.save(char);
     Toast.show(`${race.name} saved!`, 'success');
+    App.go('class', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   CLASS VIEW
+================================================================ */
+const ClassView = {
+  charId:        null,
+  allClasses:    [],     // full class objects from API
+  selectedClass: null,
+
+  render(root, { charId }) {
+    this.charId = charId;
+    root.innerHTML = wizardShell(
+      'class',
+      `<div class="loading"><div class="spinner"></div><span>Loading classes…</span></div>`,
+      `<div style="display:flex;gap:10px">
+         <button class="btn btn-outline" onclick="App.go('race', { charId: '${charId}' })">← Race</button>
+         <button class="btn btn-primary" id="continue-btn" disabled onclick="ClassView.save()">
+           Save &amp; Continue →
+         </button>
+       </div>`,
+    );
+    this._load();
+  },
+
+  async _load() {
+    try {
+      const char = Store.one(this.charId);
+      const list = await Api.get('/classes');
+      const classes = await Promise.all(list.results.map(c => Api.get(`/classes/${c.index}`)));
+      classes.sort((a, b) => a.name.localeCompare(b.name));
+
+      this.allClasses    = classes;
+      this.selectedClass = char?.klass
+        ? (classes.find(c => c.index === char.klass.index) || null)
+        : null;
+
+      this._renderPanels();
+    } catch (e) {
+      document.getElementById('wizard-body').innerHTML = `
+        <div class="error-box">
+          <p>Failed to load classes: ${esc(e.message)}</p>
+          <button class="btn btn-outline" onclick="ClassView._load()">Retry</button>
+        </div>`;
+    }
+  },
+
+  _renderPanels() {
+    document.getElementById('wizard-body').innerHTML = `
+      <div class="race-step">
+        <div class="race-list-panel">
+          <div class="panel-label">Choose Your Class</div>
+          ${this.allClasses.map(c => `
+            <button class="race-option ${this.selectedClass?.index === c.index ? 'selected' : ''}"
+                    data-cidx="${c.index}"
+                    onclick="ClassView.pickClass('${c.index}')">
+              <span class="race-opt-icon">${CLASS_ICONS[c.index] || '🎲'}</span>
+              <span>
+                <div class="race-opt-name">${esc(c.name)}</div>
+                <div class="race-opt-tag">${esc(CLASS_TAGS[c.index] || '')}</div>
+              </span>
+            </button>`).join('')}
+        </div>
+        <div class="race-detail-panel" id="class-detail">
+          ${this.selectedClass ? this._detailHtml(this.selectedClass) : this._emptyDetail()}
+        </div>
+      </div>`;
+    this._syncFooter();
+  },
+
+  _emptyDetail() {
+    return `<div class="race-empty">
+      <div class="race-empty-icon">🛡️</div>
+      <p>Select a class from the list to see its proficiencies and features.</p>
+    </div>`;
+  },
+
+  pickClass(classIndex) {
+    const klass = this.allClasses.find(c => c.index === classIndex);
+    if (!klass) return;
+    this.selectedClass = klass;
+    document.querySelectorAll('.race-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.cidx === classIndex);
+    });
+    const detail = document.getElementById('class-detail');
+    detail.innerHTML = this._detailHtml(klass);
+    detail.scrollTop = 0;
+    this._syncFooter();
+  },
+
+  _detailHtml(k) {
+    const saves  = (k.saving_throws || []).map(s => ABILITY_FULL[s.index] || s.name);
+    const skillChoice = k.proficiency_choices?.[0];
+    const skillOpts   = (skillChoice?.from?.options || [])
+      .map(o => (o.item?.name || '').replace(/^Skill: /, ''))
+      .filter(Boolean);
+    const caster = k.spellcasting;
+
+    return `
+      <div class="detail-header">
+        <span class="detail-icon">${CLASS_ICONS[k.index] || '🎲'}</span>
+        <div>
+          <h2 class="detail-title">${esc(k.name)}</h2>
+          <div class="detail-meta">
+            <span class="meta-pill">Hit Die d${k.hit_die}</span>
+            ${caster
+              ? `<span class="meta-pill">Spellcasting · ${esc(ABILITY_FULL[caster.spellcasting_ability?.index] || '')}</span>`
+              : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Saving Throws</div>
+        <div class="asi-row">
+          ${saves.map(n => `<div class="asi-chip">${esc(n)}</div>`).join('')}
+        </div>
+      </div>
+
+      ${k.proficiencies?.length ? `
+        <div class="section">
+          <div class="section-label">Armor, Weapon &amp; Tool Proficiencies</div>
+          <div class="chip-row">
+            ${k.proficiencies
+              .filter(p => !p.index.startsWith('saving-throw-'))
+              .map(p => `<span class="chip">${esc(p.name)}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${skillChoice ? `
+        <div class="section">
+          <div class="section-label">Skills — choose ${skillChoice.choose}</div>
+          <div class="chip-row">
+            ${skillOpts.map(n => `<span class="chip">${esc(n)}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${k.starting_equipment?.length ? `
+        <div class="section">
+          <div class="section-label">Starting Equipment</div>
+          <div class="chip-row">
+            ${k.starting_equipment.map(e =>
+              `<span class="chip">${e.quantity > 1 ? e.quantity + '× ' : ''}${esc(e.equipment.name)}</span>`).join('')}
+          </div>
+          ${k.starting_equipment_options?.length
+            ? `<p style="margin-top:10px;font-size:0.8rem;color:var(--text-muted)">
+                 Plus ${k.starting_equipment_options.length} equipment choices, made later.</p>`
+            : ''}
+        </div>` : ''}`;
+  },
+
+  _syncFooter() {
+    const btn  = document.getElementById('continue-btn');
+    const hint = document.getElementById('footer-hint');
+    if (!btn) return;
+    const k = this.selectedClass;
+    btn.disabled = !k;
+    hint.textContent = k ? `${k.name} — ready!` : 'Select a class to continue.';
+  },
+
+  save() {
+    const k = this.selectedClass;
+    if (!k) return;
+    const char = Store.one(this.charId);
+    if (!char) return;
+
+    // Changing class invalidates class-dependent choices made later
+    if (char.klass && char.klass.index !== k.index) {
+      char.skillProficiencies = [];
+      char.cantrips = [];
+      char.level1Spells = [];
+      char.subclassChoice = null;
+      char.fightingStyle = null;
+      char.equipment = [];
+    }
+
+    char.klass = {
+      index:                      k.index,
+      name:                       k.name,
+      hit_die:                    k.hit_die,
+      saving_throws:              (k.saving_throws || []).map(s => ({ index: s.index, name: s.name })),
+      proficiencies:              (k.proficiencies || []).map(p => ({ index: p.index, name: p.name })),
+      proficiency_choices:        k.proficiency_choices || [],
+      spellcasting:               k.spellcasting
+        ? { ability: k.spellcasting.spellcasting_ability?.index || null }
+        : null,
+      starting_equipment:         k.starting_equipment || [],
+      starting_equipment_options: k.starting_equipment_options || [],
+    };
+
+    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'abilities')) {
+      char.step = 'abilities';
+    }
+    Store.save(char);
+    Toast.show(`${k.name} saved!`, 'success');
     App.go('home');
   },
 };

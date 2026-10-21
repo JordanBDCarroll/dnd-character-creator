@@ -415,6 +415,52 @@ h3 { font-size: 1.15rem; }
 .error-box { padding: 40px; text-align: center; color: #e05050; }
 .error-box p { margin-bottom: 14px; font-size: 0.88rem; }
 
+
+/* ================================================================
+   ABILITY SCORES
+================================================================ */
+.abil-main { max-width: 860px; margin: 0 auto; padding: 28px 20px 40px; width: 100%; }
+.method-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.method-tab {
+  padding: 8px 16px; border-radius: var(--radius);
+  border: 1px solid var(--border-light); color: var(--text-secondary);
+  font-size: 0.88rem; font-weight: 500; transition: var(--transition);
+}
+.method-tab:hover { border-color: var(--gold-dark); color: var(--text-primary); }
+.method-tab.active { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+.abil-note { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px; }
+.pool-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+.pool-chip {
+  min-width: 42px; text-align: center;
+  background: var(--bg-tertiary); border: 1px solid var(--border-light);
+  border-radius: var(--radius); padding: 5px 10px; font-weight: 600;
+}
+.pool-chip.used { opacity: 0.3; text-decoration: line-through; }
+.abil-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.abil-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 16px;
+}
+.abil-name { font-family: var(--font-heading); color: var(--gold); font-size: 0.95rem; }
+.abil-total { font-size: 2rem; font-weight: 600; line-height: 1.1; margin: 6px 0 2px; }
+.abil-mod { color: var(--text-secondary); font-size: 0.85rem; }
+.abil-break { font-size: 0.78rem; color: var(--text-muted); margin: 6px 0 10px; }
+.abil-break .bonus { color: var(--green); }
+.abil-ctl { display: flex; align-items: center; gap: 8px; }
+.abil-select {
+  background: var(--bg-tertiary); color: var(--text-primary);
+  border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+  padding: 6px 8px; font: inherit; width: 100%;
+}
+.pb-btn {
+  width: 30px; height: 30px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light); color: var(--text-primary); font-size: 1.1rem;
+}
+.pb-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.pb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pb-val { min-width: 28px; text-align: center; font-weight: 600; }
+.pb-points { font-weight: 600; color: var(--gold); }
+
 /* ================================================================
    TOAST
 ================================================================ */
@@ -452,7 +498,9 @@ h3 { font-size: 1.15rem; }
 /* ================================================================
    CONSTANTS
 ================================================================ */
-const API_BASE    = 'https://www.dnd5eapi.co/api/2014';
+// Self-hosting: set window.DND_API_BASE before this script (e.g. in config.js)
+// to point at your own mirror of dnd5eapi, e.g. '/api/2014'.
+const API_BASE    = window.DND_API_BASE || 'https://www.dnd5eapi.co/api/2014';
 const STORE_KEY   = 'dnd5e-characters';
 const CACHE_KEY   = 'dnd5e-api-cache';
 
@@ -602,6 +650,8 @@ const Store = {
       background: null,
       abilityMethod: null,  // 'standard' | 'pointbuy' | 'roll'
       baseScores: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 },
+      rolledPool: [],       // 6 rolled values (roll method)
+      abilityAssign: {},    // ability -> index into pool (standard/roll methods)
       skillProficiencies: [],
       bonusLanguages: [],
       cantrips:     [],
@@ -667,6 +717,7 @@ const App = {
       case 'home': HomeView.render(root); break;
       case 'race':  RaceView.render(root, this.ctx); break;
       case 'class': ClassView.render(root, this.ctx); break;
+      case 'abilities': AbilityView.render(root, this.ctx); break;
       default:
         root.innerHTML = `<div class="loading"><p>Page not found</p></div>`;
     }
@@ -681,8 +732,8 @@ const App = {
   openCharacter(id) {
     const c = Store.one(id);
     if (!c) return;
-    // Route to the character's current step (race and class are built so far)
-    const builtSteps = ['race', 'class'];
+    // Route to the character's current step (race, class, abilities are built so far)
+    const builtSteps = ['race', 'class', 'abilities'];
     const dest = builtSteps.includes(c.step) ? c.step : 'race';
     App.go(dest, { charId: id });
   },
@@ -1291,6 +1342,185 @@ const ClassView = {
     }
     Store.save(char);
     Toast.show(`${k.name} saved!`, 'success');
+    App.go('abilities', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   ABILITY VIEW
+================================================================ */
+const ABILITY_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+const POINT_COST = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
+const POINT_BUDGET = 27;
+
+function abilityMod(score) { return Math.floor((score - 10) / 2); }
+function fmtMod(m) { return (m >= 0 ? '+' : '') + m; }
+
+const AbilityView = {
+  charId: null,
+  method: 'standard',
+  pool:   [],     // pool values for standard/roll
+  assign: {},     // ability -> pool index | null
+  points: {},     // ability -> score (point buy)
+  racial: {},     // ability -> total racial bonus
+
+  render(root, { charId }) {
+    this.charId = charId;
+    const char = Store.one(charId);
+    this.method = char.abilityMethod || 'standard';
+    this.racial = {};
+    for (const b of [...(char.race?.ability_bonuses || []), ...(char.subrace?.ability_bonuses || [])]) {
+      const k = b.ability_score.index;
+      this.racial[k] = (this.racial[k] || 0) + b.bonus;
+    }
+    this.points = {};
+    ABILITY_KEYS.forEach(k => { this.points[k] = 8; });
+    if (char.abilityMethod === 'pointbuy') Object.assign(this.points, char.baseScores);
+    this.assign = { ...(char.abilityAssign || {}) };
+    this._setPool(char.rolledPool);
+
+    root.innerHTML = wizardShell(
+      'abilities',
+      `<div class="abil-main" id="abil-main"></div>`,
+      `<div style="display:flex;gap:10px">
+         <button class="btn btn-outline" onclick="App.go('class', { charId: '${charId}' })">← Class</button>
+         <button class="btn btn-primary" id="continue-btn" disabled onclick="AbilityView.save()">
+           Save &amp; Continue →
+         </button>
+       </div>`,
+    );
+    this._draw();
+  },
+
+  _setPool(saved) {
+    if (this.method === 'standard') this.pool = [...STANDARD_ARRAY];
+    else if (this.method === 'roll') this.pool = saved?.length === 6 ? [...saved] : [];
+    else this.pool = [];
+  },
+
+  setMethod(m) {
+    this.method = m;
+    this.assign = {};
+    this._setPool(Store.one(this.charId)?.rolledPool);
+    this._draw();
+  },
+
+  roll() {
+    // 4d6, drop the lowest die
+    this.pool = Array.from({ length: 6 }, () => {
+      const d = Array.from({ length: 4 }, () => 1 + Math.floor(Math.random() * 6));
+      return d.reduce((a, b) => a + b, 0) - Math.min(...d);
+    });
+    this.assign = {};
+    this._draw();
+  },
+
+  assignScore(ab, val) {
+    if (val === '') delete this.assign[ab]; else this.assign[ab] = Number(val);
+    this._draw();
+  },
+
+  adjust(ab, delta) {
+    const next = this.points[ab] + delta;
+    if (next < 8 || next > 15) return;
+    if (delta > 0 && this._spent() - POINT_COST[this.points[ab]] + POINT_COST[next] > POINT_BUDGET) return;
+    this.points[ab] = next;
+    this._draw();
+  },
+
+  _spent() { return ABILITY_KEYS.reduce((n, k) => n + POINT_COST[this.points[k]], 0); },
+
+  _base(ab) {
+    if (this.method === 'pointbuy') return this.points[ab];
+    const i = this.assign[ab];
+    return i == null ? null : this.pool[i];
+  },
+
+  _isValid() {
+    if (this.method === 'pointbuy') return this._spent() <= POINT_BUDGET;
+    return this.pool.length === 6 && ABILITY_KEYS.every(k => this.assign[k] != null);
+  },
+
+  _draw() {
+    const used = new Set(Object.values(this.assign));
+    const tabs = [['standard', 'Standard Array'], ['pointbuy', 'Point Buy'], ['roll', '4d6 Roll']]
+      .map(([id, label]) => `<button class="method-tab ${this.method === id ? 'active' : ''}"
+        onclick="AbilityView.setMethod('${id}')">${label}</button>`).join('');
+
+    let note = '', pool = '';
+    if (this.method === 'standard') {
+      note = 'Assign each value of the standard array to one ability.';
+    } else if (this.method === 'pointbuy') {
+      note = `Spend up to ${POINT_BUDGET} points. Scores range from 8 to 15.
+              <span class="pb-points">${POINT_BUDGET - this._spent()} points left</span>`;
+    } else {
+      note = 'Roll 4d6 and drop the lowest die, six times, then assign the results.';
+      pool = `<button class="btn btn-outline" onclick="AbilityView.roll()">
+                ${I.d20} ${this.pool.length ? 'Reroll All' : 'Roll Scores'}</button>`;
+    }
+    if (this.method !== 'pointbuy' && this.pool.length) {
+      pool += this.pool.map((v, i) =>
+        `<span class="pool-chip ${used.has(i) ? 'used' : ''}">${v}</span>`).join('');
+    }
+
+    const cards = ABILITY_KEYS.map(ab => {
+      const base  = this._base(ab);
+      const bonus = this.racial[ab] || 0;
+      const total = base == null ? null : base + bonus;
+      let ctl;
+      if (this.method === 'pointbuy') {
+        const sc = this.points[ab];
+        const canUp = sc < 15 && this._spent() - POINT_COST[sc] + POINT_COST[sc + 1] <= POINT_BUDGET;
+        ctl = `<div class="abil-ctl">
+          <button class="pb-btn" ${sc <= 8 ? 'disabled' : ''} onclick="AbilityView.adjust('${ab}',-1)">−</button>
+          <span class="pb-val">${sc}</span>
+          <button class="pb-btn" ${canUp ? '' : 'disabled'} onclick="AbilityView.adjust('${ab}',1)">+</button>
+        </div>`;
+      } else {
+        const mine = this.assign[ab];
+        ctl = `<select class="abil-select" onchange="AbilityView.assignScore('${ab}', this.value)">
+          <option value="">${this.pool.length ? '— assign —' : 'Roll first'}</option>
+          ${this.pool.map((v, i) => (used.has(i) && i !== mine) ? '' :
+            `<option value="${i}" ${i === mine ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>`;
+      }
+      return `<div class="abil-card">
+        <div class="abil-name">${ABILITY_FULL[ab]}</div>
+        <div class="abil-total">${total ?? '—'}</div>
+        <div class="abil-mod">${total == null ? '' : 'Modifier ' + fmtMod(abilityMod(total))}</div>
+        <div class="abil-break">${base ?? '—'} base${bonus ? ` <span class="bonus">+ ${bonus} racial</span>` : ''}</div>
+        ${ctl}
+      </div>`;
+    }).join('');
+
+    document.getElementById('abil-main').innerHTML = `
+      <div class="method-tabs">${tabs}</div>
+      <p class="abil-note">${note}</p>
+      ${pool ? `<div class="pool-row">${pool}</div>` : ''}
+      <div class="abil-grid">${cards}</div>`;
+
+    const ok = this._isValid();
+    document.getElementById('continue-btn').disabled = !ok;
+    document.getElementById('footer-hint').textContent = ok
+      ? 'Ability scores ready!'
+      : this.method === 'roll' && !this.pool.length ? 'Roll your scores to continue.'
+      : 'Assign every ability score to continue.';
+  },
+
+  save() {
+    if (!this._isValid()) return;
+    const char = Store.one(this.charId);
+    if (!char) return;
+    char.abilityMethod = this.method;
+    char.baseScores    = Object.fromEntries(ABILITY_KEYS.map(k => [k, this._base(k)]));
+    char.rolledPool    = this.method === 'roll' ? this.pool : char.rolledPool || [];
+    char.abilityAssign = this.method === 'pointbuy' ? {} : this.assign;
+    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'background')) {
+      char.step = 'background';
+    }
+    Store.save(char);
+    Toast.show('Ability scores saved!', 'success');
     App.go('home');
   },
 };

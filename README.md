@@ -150,8 +150,10 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - All 12 SRD classes with hit die, saves, proficiencies, skill choices, starting equipment, spellcasting ability
 - Race step now continues into class step; changing class clears class-dependent choices
 
+### ✅ v2 — ability scores
+- Standard array, point buy (27 pts), 4d6 roll; racial + subrace bonuses shown live
+
 ### 🔜 Next
-- v2: Ability scores (all three methods)
 - v3: Background selection
 - v4: Class-specific choices (spells, domains, etc.)
 - v5: Skills + languages
@@ -169,3 +171,13 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - **Fonts:** Cinzel for headings, Inter for body.
 - **Layout:** Mobile-first, responsive grid. Wizard step bar always visible.
 - **Validation:** Continue button disabled until step is fully valid. Impossible to advance with an invalid character.
+
+---
+
+## Self-hosting
+
+The site is static files only — serve `index.html` from any web server (nginx, Caddy, Apache, etc.); no build step.
+
+- **API:** by default it calls `https://www.dnd5eapi.co/api/2014`. To use your own mirror (e.g. the open-source [5e-srd-api](https://github.com/5e-bits/5e-srd-api) in Docker), set `window.DND_API_BASE = '/api/2014'` in a `<script>` before the main script.
+- **Fonts:** currently loaded from Google Fonts; vendor Cinzel/Inter locally if your server must not call third parties.
+- **Data:** characters live in each visitor's browser `localStorage`; the server stores nothing.

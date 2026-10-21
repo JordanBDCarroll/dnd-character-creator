@@ -29,8 +29,11 @@ GET /api/2014/classes                        — list of 12 SRD classes
 GET /api/2014/classes/{index}                — class detail (hit die, proficiencies, spellcasting)
 GET /api/2014/backgrounds                    — list of SRD backgrounds
 GET /api/2014/backgrounds/{index}            — background detail (skills, languages, equipment, feature)
-GET /api/2014/spells?level=0&classes={name}  — cantrips for class
-GET /api/2014/spells?level=1&classes={name}  — 1st-level spells for class
+GET /api/2014/classes/{index}/levels/1       — level-1 spellcasting counts
+GET /api/2014/classes/{index}/spells         — class spell list (filter by level 0 / 1)
+GET /api/2014/spells/{index}                 — spell description (lazy)
+GET /api/2014/subclasses/{index}             — subclass detail
+GET /api/2014/features/fighter-fighting-style — fighting style options
 GET /api/2014/skills                         — full skill list with governing ability scores
 GET /api/2014/languages                      — language list
 GET /api/2014/equipment-categories/all-armor — armor list for AC calculation
@@ -93,8 +96,8 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
   bonusLanguages:     [String],  // language indices chosen
   cantrips:           [String],  // spell indices
   level1Spells:       [String],
-  subclassChoice:     String|null,
-  fightingStyle:      String|null,
+  subclassChoice:     { index, name }|null,
+  fightingStyle:      { index, name }|null,
   equipment:          [{ index, name, quantity }],
   useGold:            Boolean,
   startGold:          Number,
@@ -156,8 +159,11 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 ### ✅ v3 — background selection
 - Skills, languages, equipment, feature, and personality pools. dnd5eapi only ships Acolyte, so extra backgrounds are merged in from [Open5e](https://open5e.com) (`api.open5e.com/v1/backgrounds`, optional; untested against the live API)
 
+### ✅ v4 — class choices (level 1)
+- Cantrips + spells with counts from `/classes/{x}/levels/1` (prepared casters: ability mod + 1; wizard spellbook 6), subclass for Cleric/Sorcerer/Warlock, Fighter fighting style, lazy spell descriptions
+- Not yet covered: Ranger favored enemy, other class-specific level-1 picks
+
 ### 🔜 Next
-- v4: Class-specific choices (spells, domains, etc.)
 - v5: Skills + languages
 - v6: Equipment
 - v7: Details + portrait upload

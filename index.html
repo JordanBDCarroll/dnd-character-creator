@@ -461,6 +461,39 @@ h3 { font-size: 1.15rem; }
 .pb-val { min-width: 28px; text-align: center; font-weight: 600; }
 .pb-points { font-weight: 600; color: var(--gold); }
 
+
+/* ================================================================
+   CLASS CHOICES
+================================================================ */
+.choices-main { max-width: 820px; margin: 0 auto; padding: 28px 20px 40px; width: 100%; }
+.choices-main h2 { color: var(--gold); margin-bottom: 4px; }
+.choices-sub { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 22px; }
+.pick-count { color: var(--gold); font-weight: 600; }
+.spell-list { display: flex; flex-direction: column; gap: 6px; }
+.spell-row {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; transition: var(--transition);
+}
+.spell-row.selected { border-color: var(--gold); background: var(--gold-glow); }
+.spell-head { display: flex; align-items: stretch; }
+.spell-pick {
+  flex: 1; text-align: left; padding: 9px 14px; color: var(--text-primary);
+  font-size: 0.88rem; font-weight: 500; display: flex; align-items: center; gap: 10px;
+}
+.spell-pick:disabled { opacity: 0.35; cursor: not-allowed; }
+.spell-check {
+  width: 16px; height: 16px; border: 1px solid var(--border-light);
+  border-radius: 4px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; color: #0d0d1a;
+}
+.spell-row.selected .spell-check { background: var(--gold); border-color: var(--gold); }
+.spell-info { padding: 0 14px; color: var(--text-muted); }
+.spell-info:hover { color: var(--gold); }
+.spell-row.open .spell-info svg { transform: rotate(90deg); }
+.spell-info svg { width: 14px; height: 14px; display: block; transition: transform var(--transition); }
+.spell-desc { display: none; padding: 2px 14px 12px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-line; }
+.spell-row.open .spell-desc { display: block; }
+
 /* ================================================================
    TOAST
 ================================================================ */
@@ -727,6 +760,7 @@ const App = {
       case 'class': ClassView.render(root, this.ctx); break;
       case 'abilities': AbilityView.render(root, this.ctx); break;
       case 'background': BackgroundView.render(root, this.ctx); break;
+      case 'choices': ChoicesView.render(root, this.ctx); break;
       default:
         root.innerHTML = `<div class="loading"><p>Page not found</p></div>`;
     }
@@ -741,8 +775,8 @@ const App = {
   openCharacter(id) {
     const c = Store.one(id);
     if (!c) return;
-    // Route to the character's current step (race, class, abilities, background are built so far)
-    const builtSteps = ['race', 'class', 'abilities', 'background'];
+    // Route to the character's current step (race through choices are built so far)
+    const builtSteps = ['race', 'class', 'abilities', 'background', 'choices'];
     const dest = builtSteps.includes(c.step) ? c.step : 'race';
     App.go(dest, { charId: id });
   },
@@ -1747,6 +1781,245 @@ const BackgroundView = {
     }
     Store.save(char);
     Toast.show(`${b.name} saved!`, 'success');
+    App.go('choices', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   CHOICES VIEW  (level-1 class choices)
+================================================================ */
+// Classes that pick a subclass / fighting style at level 1 (2014 SRD rules)
+const LEVEL1_SUBCLASS = { cleric: 'Divine Domain', sorcerer: 'Sorcerous Origin', warlock: 'Otherworldly Patron' };
+const LEVEL1_FIGHTING_STYLE = ['fighter'];
+
+function finalScore(char, ab) {
+  let n = char.baseScores?.[ab] ?? 8;
+  for (const b of [...(char.race?.ability_bonuses || []), ...(char.subrace?.ability_bonuses || [])]) {
+    if (b.ability_score.index === ab) n += b.bonus;
+  }
+  return n;
+}
+
+const ChoicesView = {
+  charId: null,
+  need:   null,      // { cantrips, spells, spellsLabel, subclass: {label, options}, styles: [] }
+  lists:  { cantrips: [], spells: [] },
+  sel:    { cantrips: new Set(), spells: new Set(), subclass: null, style: null },
+  descCache: {},
+
+  render(root, { charId }) {
+    this.charId = charId;
+    root.innerHTML = wizardShell(
+      'choices',
+      `<div class="loading"><div class="spinner"></div><span>Loading class options…</span></div>`,
+      `<div style="display:flex;gap:10px">
+         <button class="btn btn-outline" onclick="App.go('background', { charId: '${charId}' })">← Background</button>
+         <button class="btn btn-primary" id="continue-btn" disabled onclick="ChoicesView.save()">
+           Save &amp; Continue →
+         </button>
+       </div>`,
+    );
+    this._load();
+  },
+
+  async _load() {
+    try {
+      const char = Store.one(this.charId);
+      const k = char.klass;
+      if (!k) { App.go('class', { charId: this.charId }); return; }
+
+      const lvl1 = await Api.get(`/classes/${k.index}/levels/1`);
+      const sc = lvl1.spellcasting || {};
+      const casts = (sc.spell_slots_level_1 || 0) > 0 || (sc.cantrips_known || 0) > 0;
+
+      const need = { cantrips: 0, spells: 0, spellsLabel: 'Spells', subclass: null, styles: [] };
+      this.lists = { cantrips: [], spells: [] };
+
+      if (casts) {
+        const mod = abilityMod(finalScore(char, k.spellcasting?.ability || 'int'));
+        need.cantrips = sc.cantrips_known || 0;
+        if (sc.spells_known != null) {
+          need.spells = sc.spells_known; need.spellsLabel = 'Spells Known';
+        } else if (k.index === 'wizard') {
+          need.spells = 6; need.spellsLabel = 'Spellbook Spells';
+        } else {
+          need.spells = Math.max(1, mod + 1); need.spellsLabel = 'Prepared Spells';
+        }
+        const all = await Api.get(`/classes/${k.index}/spells`);
+        const byName = (a, b) => a.name.localeCompare(b.name);
+        this.lists.cantrips = all.results.filter(x => x.level === 0).sort(byName);
+        this.lists.spells   = all.results.filter(x => x.level === 1).sort(byName);
+      }
+
+      if (LEVEL1_SUBCLASS[k.index]) {
+        const cls  = await Api.get(`/classes/${k.index}`);
+        const subs = await Promise.all((cls.subclasses || []).map(x => Api.get(`/subclasses/${x.index}`)));
+        need.subclass = { label: LEVEL1_SUBCLASS[k.index], options: subs };
+      }
+
+      if (LEVEL1_FIGHTING_STYLE.includes(k.index)) {
+        const feat = await Api.get(`/features/${k.index}-fighting-style`);
+        const opts = feat.feature_specific?.subfeature_options?.from?.options || [];
+        need.styles = opts.map(o => o.item).filter(Boolean);
+      }
+
+      this.need = need;
+      this.sel = {
+        cantrips: new Set(char.cantrips || []),
+        spells:   new Set(char.level1Spells || []),
+        subclass: char.subclassChoice?.index || null,
+        style:    char.fightingStyle?.index || null,
+      };
+      // Drop stale selections that no longer exist in the lists
+      const ok = new Set(this.lists.cantrips.map(x => x.index));
+      this.sel.cantrips = new Set([...this.sel.cantrips].filter(i => ok.has(i)));
+      const ok2 = new Set(this.lists.spells.map(x => x.index));
+      this.sel.spells = new Set([...this.sel.spells].filter(i => ok2.has(i)));
+
+      this._draw();
+    } catch (e) {
+      document.getElementById('wizard-body').innerHTML = `
+        <div class="error-box">
+          <p>Failed to load class options: ${esc(e.message)}</p>
+          <button class="btn btn-outline" onclick="ChoicesView._load()">Retry</button>
+        </div>`;
+    }
+  },
+
+  _spellSection(key, title, list, need) {
+    const sel = this.sel[key];
+    const full = sel.size >= need;
+    return `
+      <div class="section">
+        <div class="section-label">${title} — <span class="pick-count">${sel.size} / ${need}</span></div>
+        <div class="spell-list">
+          ${list.map(sp => {
+            const on = sel.has(sp.index);
+            return `
+            <div class="spell-row ${on ? 'selected' : ''}" id="sp-${sp.index}">
+              <div class="spell-head">
+                <button class="spell-pick" ${!on && full ? 'disabled' : ''}
+                        onclick="ChoicesView.toggleSpell('${key}','${sp.index}')">
+                  <span class="spell-check">${on ? '✓' : ''}</span>${esc(sp.name)}
+                </button>
+                <button class="spell-info" title="Description" onclick="ChoicesView.toggleDesc('${sp.index}')">${I.chevron}</button>
+              </div>
+              <div class="spell-desc" id="sd-${sp.index}"></div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  },
+
+  _optionCards(group, items, selected, label) {
+    return `
+      <div class="section">
+        <div class="section-label">${label}</div>
+        <div class="subrace-grid">
+          ${items.map(o => `
+            <button class="subrace-card ${selected === o.index ? 'selected' : ''}"
+                    onclick="ChoicesView.pickOption('${group}','${o.index}')">
+              <div class="subrace-name">${esc(o.name.replace(/^Fighting Style: /, ''))}</div>
+              ${o.desc ? `<div class="subrace-traits">${esc(o.desc[0] || '')}</div>` : ''}
+            </button>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  _draw() {
+    // Preserve scroll position across re-draws
+    const main = document.getElementById('wizard-body');
+    const y = window.scrollY;
+    const n = this.need;
+    const nothing = !n.cantrips && !n.spells && !n.subclass && !n.styles.length;
+
+    main.innerHTML = `<div class="choices-main">
+      <h2>Class Choices</h2>
+      <p class="choices-sub">${nothing
+        ? 'Your class has no choices to make at level 1.'
+        : 'Choices your class makes at level 1.'}</p>
+      ${n.subclass ? this._optionCards('subclass', n.subclass.options, this.sel.subclass, n.subclass.label) : ''}
+      ${n.styles.length ? this._optionCards('style', n.styles, this.sel.style, 'Fighting Style') : ''}
+      ${n.cantrips ? this._spellSection('cantrips', 'Cantrips', this.lists.cantrips, n.cantrips) : ''}
+      ${n.spells ? this._spellSection('spells', n.spellsLabel, this.lists.spells, n.spells) : ''}
+    </div>`;
+    window.scrollTo(0, y);
+    this._syncFooter();
+  },
+
+  toggleSpell(key, index) {
+    const set = this.sel[key];
+    const max = key === 'cantrips' ? this.need.cantrips : this.need.spells;
+    if (set.has(index)) set.delete(index);
+    else if (set.size < max) set.add(index);
+    this._redrawKeepingOpen();
+  },
+
+  _redrawKeepingOpen() {
+    const open = [...document.querySelectorAll('.spell-row.open')].map(el => el.id);
+    this._draw();
+    open.forEach(id => {
+      const row = document.getElementById(id);
+      if (!row) return;
+      row.classList.add('open');
+      const idx = id.slice(3);
+      if (this.descCache[idx]) document.getElementById('sd-' + idx).textContent = this.descCache[idx];
+    });
+  },
+
+  async toggleDesc(index) {
+    const row = document.getElementById('sp-' + index);
+    const body = document.getElementById('sd-' + index);
+    if (!row) return;
+    const open = row.classList.toggle('open');
+    if (!open || this.descCache[index]) { if (open) body.textContent = this.descCache[index]; return; }
+    body.textContent = 'Loading…';
+    try {
+      const d = await Api.get(`/spells/${index}`);
+      const head = [d.school?.name, d.casting_time, d.range, d.duration].filter(Boolean).join(' · ');
+      this.descCache[index] = head + '\n\n' + (d.desc || []).join('\n\n');
+      body.textContent = this.descCache[index];
+    } catch { body.textContent = 'Could not load description.'; }
+  },
+
+  pickOption(group, index) {
+    this.sel[group] = index;
+    this._draw();
+  },
+
+  _isValid() {
+    const n = this.need, s = this.sel;
+    if (!n) return false;
+    return s.cantrips.size === n.cantrips && s.spells.size === n.spells
+      && (!n.subclass || !!s.subclass) && (!n.styles.length || !!s.style);
+  },
+
+  _syncFooter() {
+    const btn = document.getElementById('continue-btn');
+    const hint = document.getElementById('footer-hint');
+    if (!btn) return;
+    const ok = this._isValid();
+    btn.disabled = !ok;
+    hint.textContent = ok ? 'Class choices complete!' : 'Make all required choices to continue.';
+  },
+
+  save() {
+    if (!this._isValid()) return;
+    const char = Store.one(this.charId);
+    if (!char) return;
+    const n = this.need, s = this.sel;
+    char.cantrips     = [...s.cantrips];
+    char.level1Spells = [...s.spells];
+    const sub = n.subclass?.options.find(o => o.index === s.subclass);
+    char.subclassChoice = sub ? { index: sub.index, name: sub.name } : null;
+    const st = n.styles.find(o => o.index === s.style);
+    char.fightingStyle = st ? { index: st.index, name: st.name.replace(/^Fighting Style: /, '') } : null;
+
+    if (STEPS.findIndex(x => x.id === char.step) < STEPS.findIndex(x => x.id === 'skills')) {
+      char.step = 'skills';
+    }
+    Store.save(char);
+    Toast.show('Class choices saved!', 'success');
     App.go('home');
   },
 };

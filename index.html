@@ -521,6 +521,12 @@ const RACE_ICONS = {
   human: '👤', tiefling: '😈',
 };
 
+const BG_ICONS = {
+  acolyte: '🕯️', charlatan: '🎭', criminal: '🗝️', entertainer: '🎪',
+  'folk-hero': '🌾', 'guild-artisan': '🔨', hermit: '🏔️', noble: '👑',
+  outlander: '🧭', sage: '📜', sailor: '⚓', soldier: '🎖️', urchin: '🐀',
+};
+
 const RACE_TAGS = {
   dragonborn: 'Proud dragon-blooded warriors',
   dwarf:      'Stout and resilient craftspeople',
@@ -718,6 +724,7 @@ const App = {
       case 'race':  RaceView.render(root, this.ctx); break;
       case 'class': ClassView.render(root, this.ctx); break;
       case 'abilities': AbilityView.render(root, this.ctx); break;
+      case 'background': BackgroundView.render(root, this.ctx); break;
       default:
         root.innerHTML = `<div class="loading"><p>Page not found</p></div>`;
     }
@@ -732,8 +739,8 @@ const App = {
   openCharacter(id) {
     const c = Store.one(id);
     if (!c) return;
-    // Route to the character's current step (race, class, abilities are built so far)
-    const builtSteps = ['race', 'class', 'abilities'];
+    // Route to the character's current step (race, class, abilities, background are built so far)
+    const builtSteps = ['race', 'class', 'abilities', 'background'];
     const dest = builtSteps.includes(c.step) ? c.step : 'race';
     App.go(dest, { charId: id });
   },
@@ -1521,6 +1528,174 @@ const AbilityView = {
     }
     Store.save(char);
     Toast.show('Ability scores saved!', 'success');
+    App.go('background', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   BACKGROUND VIEW
+================================================================ */
+// Option entries are either { string } or { desc, alignments } depending on the pool
+function bgOptionText(o) { return o.string || o.desc || ''; }
+function bgPool(p) {
+  return { choose: p?.choose || 0, options: (p?.from?.options || []).map(bgOptionText).filter(Boolean) };
+}
+
+const BackgroundView = {
+  charId:      null,
+  all:         [],
+  selected:    null,
+
+  render(root, { charId }) {
+    this.charId = charId;
+    root.innerHTML = wizardShell(
+      'background',
+      `<div class="loading"><div class="spinner"></div><span>Loading backgrounds…</span></div>`,
+      `<div style="display:flex;gap:10px">
+         <button class="btn btn-outline" onclick="App.go('abilities', { charId: '${charId}' })">← Abilities</button>
+         <button class="btn btn-primary" id="continue-btn" disabled onclick="BackgroundView.save()">
+           Save &amp; Continue →
+         </button>
+       </div>`,
+    );
+    this._load();
+  },
+
+  async _load() {
+    try {
+      const char = Store.one(this.charId);
+      const list = await Api.get('/backgrounds');
+      const all  = await Promise.all(list.results.map(b => Api.get(`/backgrounds/${b.index}`)));
+      all.sort((a, b) => a.name.localeCompare(b.name));
+      this.all      = all;
+      this.selected = char?.background
+        ? (all.find(b => b.index === char.background.index) || null) : null;
+      this._renderPanels();
+    } catch (e) {
+      document.getElementById('wizard-body').innerHTML = `
+        <div class="error-box">
+          <p>Failed to load backgrounds: ${esc(e.message)}</p>
+          <button class="btn btn-outline" onclick="BackgroundView._load()">Retry</button>
+        </div>`;
+    }
+  },
+
+  _renderPanels() {
+    document.getElementById('wizard-body').innerHTML = `
+      <div class="race-step">
+        <div class="race-list-panel">
+          <div class="panel-label">Choose Your Background</div>
+          ${this.all.map(b => `
+            <button class="race-option ${this.selected?.index === b.index ? 'selected' : ''}"
+                    data-bidx="${b.index}" onclick="BackgroundView.pick('${b.index}')">
+              <span class="race-opt-icon">${BG_ICONS[b.index] || '📜'}</span>
+              <span><div class="race-opt-name">${esc(b.name)}</div></span>
+            </button>`).join('')}
+        </div>
+        <div class="race-detail-panel" id="bg-detail">
+          ${this.selected ? this._detailHtml(this.selected) : `<div class="race-empty">
+            <div class="race-empty-icon">📜</div>
+            <p>Select a background to see its skills, feature and equipment.</p></div>`}
+        </div>
+      </div>`;
+    this._syncFooter();
+  },
+
+  pick(index) {
+    const b = this.all.find(x => x.index === index);
+    if (!b) return;
+    this.selected = b;
+    document.querySelectorAll('.race-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.bidx === index);
+    });
+    const d = document.getElementById('bg-detail');
+    d.innerHTML = this._detailHtml(b);
+    d.scrollTop = 0;
+    this._syncFooter();
+  },
+
+  _detailHtml(b) {
+    const profs = (b.starting_proficiencies || []).map(p => p.name.replace(/^Skill: /, ''));
+    const langs = b.language_options;
+    const gear  = b.starting_equipment || [];
+    const flavor = [
+      ['Personality Traits', bgPool(b.personality_traits)],
+      ['Ideals',             bgPool(b.ideals)],
+      ['Bonds',              bgPool(b.bonds)],
+      ['Flaws',              bgPool(b.flaws)],
+    ].filter(([, p]) => p.options.length);
+
+    return `
+      <div class="detail-header">
+        <span class="detail-icon">${BG_ICONS[b.index] || '📜'}</span>
+        <div><h2 class="detail-title">${esc(b.name)}</h2></div>
+      </div>
+
+      ${profs.length ? `
+        <div class="section"><div class="section-label">Skill Proficiencies</div>
+          <div class="chip-row">${profs.map(n => `<span class="chip">${esc(n)}</span>`).join('')}</div>
+        </div>` : ''}
+
+      ${langs?.choose ? `
+        <div class="section"><div class="section-label">Languages</div>
+          <div class="chip-row"><span class="chip dashed">${langs.choose} of your choice</span></div>
+        </div>` : ''}
+
+      ${gear.length ? `
+        <div class="section"><div class="section-label">Starting Equipment</div>
+          <div class="chip-row">${gear.map(e =>
+            `<span class="chip">${e.quantity > 1 ? e.quantity + '× ' : ''}${esc(e.equipment.name)}</span>`).join('')}</div>
+        </div>` : ''}
+
+      ${b.feature ? `
+        <div class="section"><div class="section-label">Feature — ${esc(b.feature.name)}</div>
+          <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.65;white-space:pre-line">${esc((b.feature.desc || []).join('\n\n'))}</p>
+        </div>` : ''}
+
+      ${flavor.map(([label, p]) => `
+        <div class="section"><div class="section-label">${label}${p.choose ? ` — choose ${p.choose}` : ''}</div>
+          <div class="trait-list">${p.options.map(t =>
+            `<div class="trait-item"><div class="trait-header"><span class="trait-name" style="font-weight:400">${esc(t)}</span></div></div>`).join('')}</div>
+        </div>`).join('')}`;
+  },
+
+  _syncFooter() {
+    const btn = document.getElementById('continue-btn');
+    const hint = document.getElementById('footer-hint');
+    if (!btn) return;
+    btn.disabled = !this.selected;
+    hint.textContent = this.selected ? `${this.selected.name} — ready!` : 'Select a background to continue.';
+  },
+
+  save() {
+    const b = this.selected;
+    if (!b) return;
+    const char = Store.one(this.charId);
+    if (!char) return;
+
+    // A different background invalidates previously chosen personality flavor
+    if (char.background && char.background.index !== b.index) {
+      char.personalityTraits = []; char.ideal = ''; char.bond = ''; char.flaw = '';
+    }
+
+    char.background = {
+      index:               b.index,
+      name:                b.name,
+      skill_proficiencies: (b.starting_proficiencies || []).map(p => ({ index: p.index, name: p.name })),
+      language_options:    b.language_options ? { choose: b.language_options.choose } : null,
+      starting_equipment:  b.starting_equipment || [],
+      feature:             b.feature ? { name: b.feature.name, desc: b.feature.desc || [] } : null,
+      personality_traits:  bgPool(b.personality_traits),
+      ideals:              bgPool(b.ideals),
+      bonds:               bgPool(b.bonds),
+      flaws:               bgPool(b.flaws),
+    };
+
+    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'choices')) {
+      char.step = 'choices';
+    }
+    Store.save(char);
+    Toast.show(`${b.name} saved!`, 'success');
     App.go('home');
   },
 };

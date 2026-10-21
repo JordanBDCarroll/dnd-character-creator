@@ -153,8 +153,10 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 ### ✅ v2 — ability scores
 - Standard array, point buy (27 pts), 4d6 roll; racial + subrace bonuses shown live
 
+### ✅ v3 — background selection
+- Skills, languages, equipment, feature, and personality pools (SRD only ships Acolyte)
+
 ### 🔜 Next
-- v3: Background selection
 - v4: Class-specific choices (spells, domains, etc.)
 - v5: Skills + languages
 - v6: Equipment

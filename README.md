@@ -154,7 +154,7 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - Standard array, point buy (27 pts), 4d6 roll; racial + subrace bonuses shown live
 
 ### ✅ v3 — background selection
-- Skills, languages, equipment, feature, and personality pools (SRD only ships Acolyte)
+- Skills, languages, equipment, feature, and personality pools. dnd5eapi only ships Acolyte, so extra backgrounds are merged in from [Open5e](https://open5e.com) (`api.open5e.com/v1/backgrounds`, optional; untested against the live API)
 
 ### 🔜 Next
 - v4: Class-specific choices (spells, domains, etc.)
@@ -170,6 +170,7 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 
 - **Theme:** Dark, warm fantasy — not parchment, not neon. Deep navy + gold accents.
 - **Colors:** `#0d0d1a` background, `#c9aa71` gold, class-specific accent colors (upcoming).
+- **Open5e:** extra backgrounds come from `https://api.open5e.com/v1`; override with `window.OPEN5E_BASE`. If unreachable the app falls back to SRD-only.
 - **Fonts:** Cinzel for headings, Inter for body.
 - **Layout:** Mobile-first, responsive grid. Wizard step bar always visible.
 - **Validation:** Continue button disabled until step is fully valid. Impossible to advance with an invalid character.
@@ -181,5 +182,6 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 The site is static files only — serve `index.html` from any web server (nginx, Caddy, Apache, etc.); no build step.
 
 - **API:** by default it calls `https://www.dnd5eapi.co/api/2014`. To use your own mirror (e.g. the open-source [5e-srd-api](https://github.com/5e-bits/5e-srd-api) in Docker), set `window.DND_API_BASE = '/api/2014'` in a `<script>` before the main script.
+- **Open5e:** extra backgrounds come from `https://api.open5e.com/v1`; override with `window.OPEN5E_BASE`. If unreachable the app falls back to SRD-only.
 - **Fonts:** currently loaded from Google Fonts; vendor Cinzel/Inter locally if your server must not call third parties.
 - **Data:** characters live in each visitor's browser `localStorage`; the server stores nothing.

@@ -501,6 +501,8 @@ h3 { font-size: 1.15rem; }
 // Self-hosting: set window.DND_API_BASE before this script (e.g. in config.js)
 // to point at your own mirror of dnd5eapi, e.g. '/api/2014'.
 const API_BASE    = window.DND_API_BASE || 'https://www.dnd5eapi.co/api/2014';
+// Second data source for content the SRD lacks (extra backgrounds). Override like DND_API_BASE.
+const OPEN5E_BASE = window.OPEN5E_BASE || 'https://api.open5e.com/v1';
 const STORE_KEY   = 'dnd5e-characters';
 const CACHE_KEY   = 'dnd5e-api-cache';
 
@@ -605,7 +607,7 @@ const Api = {
   async get(path) {
     const c = this._cache();
     if (c[path]) return c[path];
-    const r = await fetch(API_BASE + path);
+    const r = await fetch(path.startsWith('http') ? path : API_BASE + path);
     if (!r.ok) throw new Error(`HTTP ${r.status} — ${path}`);
     const data = await r.json();
     c[path] = data;
@@ -1541,6 +1543,28 @@ function bgPool(p) {
   return { choose: p?.choose || 0, options: (p?.from?.options || []).map(bgOptionText).filter(Boolean) };
 }
 
+const NUM_WORDS = { one: 1, two: 2, three: 3, four: 4 };
+
+// Open5e backgrounds are free-text strings; map them onto the dnd5eapi shape used by this view.
+function normalizeOpen5eBackground(o) {
+  const split = str => (str || '').split(/,\s*|\s+and\s+/).map(x => x.trim().replace(/\.$/, '')).filter(Boolean);
+  const langs = o.languages || '';
+  const m = langs.match(/\b(one|two|three|four|\d)\b/i);
+  const chooseN = /of your choice/i.test(langs) && m ? (NUM_WORDS[m[1].toLowerCase()] || Number(m[1])) : 0;
+  return {
+    index: 'o5e-' + o.slug,
+    name: o.name,
+    source: o.document__title || 'Open5e',
+    starting_proficiencies: split(o.skill_proficiencies).map(n => ({ index: 'skill-' + n.toLowerCase().replace(/\s+/g, '-'), name: 'Skill: ' + n })),
+    tool_text: o.tool_proficiencies || '',
+    language_options: chooseN ? { choose: chooseN } : null,
+    language_text: chooseN ? '' : langs,
+    starting_equipment: split(o.equipment).map(n => ({ equipment: { index: null, name: n }, quantity: 1 })),
+    feature: o.feature ? { name: o.feature, desc: (o.feature_desc || '').split(/\n+/).filter(Boolean) } : null,
+    characteristics_text: o.suggested_characteristics || '',
+  };
+}
+
 const BackgroundView = {
   charId:      null,
   all:         [],
@@ -1566,6 +1590,16 @@ const BackgroundView = {
       const char = Store.one(this.charId);
       const list = await Api.get('/backgrounds');
       const all  = await Promise.all(list.results.map(b => Api.get(`/backgrounds/${b.index}`)));
+      // Extra backgrounds from Open5e; if it is unreachable, carry on with the SRD set.
+      try {
+        const have = new Set(all.map(b => b.name.toLowerCase()));
+        let url = `${OPEN5E_BASE}/backgrounds/?limit=100`;
+        for (let page = 0; url && page < 5; page++) {
+          const res = await Api.get(url);
+          res.results.forEach(o => { if (!have.has(o.name.toLowerCase())) all.push(normalizeOpen5eBackground(o)); });
+          url = res.next;
+        }
+      } catch { /* Open5e optional */ }
       all.sort((a, b) => a.name.localeCompare(b.name));
       this.all      = all;
       this.selected = char?.background
@@ -1628,7 +1662,8 @@ const BackgroundView = {
     return `
       <div class="detail-header">
         <span class="detail-icon">${BG_ICONS[b.index] || '📜'}</span>
-        <div><h2 class="detail-title">${esc(b.name)}</h2></div>
+        <div><h2 class="detail-title">${esc(b.name)}</h2>
+          ${b.source ? `<div class="detail-meta"><span class="meta-pill">${esc(b.source)}</span></div>` : ''}</div>
       </div>
 
       ${profs.length ? `
@@ -1636,9 +1671,16 @@ const BackgroundView = {
           <div class="chip-row">${profs.map(n => `<span class="chip">${esc(n)}</span>`).join('')}</div>
         </div>` : ''}
 
-      ${langs?.choose ? `
+      ${b.tool_text ? `
+        <div class="section"><div class="section-label">Tool Proficiencies</div>
+          <div class="chip-row"><span class="chip">${esc(b.tool_text)}</span></div>
+        </div>` : ''}
+
+      ${langs?.choose || b.language_text ? `
         <div class="section"><div class="section-label">Languages</div>
-          <div class="chip-row"><span class="chip dashed">${langs.choose} of your choice</span></div>
+          <div class="chip-row">${langs?.choose
+            ? `<span class="chip dashed">${langs.choose} of your choice</span>`
+            : `<span class="chip">${esc(b.language_text)}</span>`}</div>
         </div>` : ''}
 
       ${gear.length ? `
@@ -1650,6 +1692,11 @@ const BackgroundView = {
       ${b.feature ? `
         <div class="section"><div class="section-label">Feature — ${esc(b.feature.name)}</div>
           <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.65;white-space:pre-line">${esc((b.feature.desc || []).join('\n\n'))}</p>
+        </div>` : ''}
+
+      ${b.characteristics_text ? `
+        <div class="section"><div class="section-label">Suggested Characteristics</div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;white-space:pre-line">${esc(b.characteristics_text)}</p>
         </div>` : ''}
 
       ${flavor.map(([label, p]) => `
@@ -1682,6 +1729,10 @@ const BackgroundView = {
       index:               b.index,
       name:                b.name,
       skill_proficiencies: (b.starting_proficiencies || []).map(p => ({ index: p.index, name: p.name })),
+      source:              b.source || 'SRD',
+      tool_text:           b.tool_text || '',
+      language_text:       b.language_text || '',
+      characteristics_text: b.characteristics_text || '',
       language_options:    b.language_options ? { choose: b.language_options.choose } : null,
       starting_equipment:  b.starting_equipment || [],
       feature:             b.feature ? { name: b.feature.name, desc: b.feature.desc || [] } : null,

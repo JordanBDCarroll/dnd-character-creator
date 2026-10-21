@@ -93,7 +93,7 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
   baseScores: { str, dex, con, int, wis, cha },  // before racial ASIs
 
   skillProficiencies: [String],  // skill indices
-  bonusLanguages:     [String],  // language indices chosen
+  bonusLanguages:     [{ index, name }],  // languages chosen
   cantrips:           [String],  // spell indices
   level1Spells:       [String],
   subclassChoice:     { index, name }|null,
@@ -163,12 +163,26 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - Cantrips + spells with counts from `/classes/{x}/levels/1` (prepared casters: ability mod + 1; wizard spellbook 6), subclass for Cleric/Sorcerer/Warlock, Fighter fighting style, lazy spell descriptions
 - Not yet covered: Ranger favored enemy, other class-specific level-1 picks
 
-### 🔜 Next
-- v5: Skills + languages
-- v6: Equipment
-- v7: Details + portrait upload
-- v8: Read-only character sheet view + print stylesheet
-- v9: Export to JSON
+### ✅ v5 — skills + languages
+- Class skill picks (disabled when already granted by race/background), bonus languages from race/subrace/background
+
+### ✅ v6 — equipment
+- Class + background starting gear incl. nested "pick from category" choices, or roll starting gold instead
+
+### ✅ v7 — details
+- Name, alignment, traits/ideal/bond/flaw (with background suggestions), portrait upload (downscaled to ≤320px JPEG)
+
+### ✅ v8 — character sheet
+- Derived stats (AC from armor/shield, HP, saves, skills, attacks, spell DC/attack), print stylesheet, jump back to edit any step
+
+### ✅ v9 — JSON export / import
+- Export from the sheet, import from the home page (never overwrites an existing character)
+
+### Known limitations
+- Level 1 characters only
+- Half-elf's two free +1 ability scores and Skill Versatility are not handled (API models them as options)
+- Ranger favored enemy, tool/instrument proficiency choices, and expertise are not covered
+- Everything beyond the happy path was tested against mocked API responses, not the live APIs
 
 ---
 

@@ -494,6 +494,92 @@ h3 { font-size: 1.15rem; }
 .spell-desc { display: none; padding: 2px 14px 12px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-line; }
 .spell-row.open .spell-desc { display: block; }
 
+
+/* ================================================================
+   SKILLS / EQUIPMENT / DETAILS
+================================================================ */
+.form-main { max-width: 820px; margin: 0 auto; padding: 28px 20px 40px; width: 100%; }
+.form-main h2 { color: var(--gold); margin-bottom: 4px; }
+.pick-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick-chip {
+  background: var(--bg-tertiary); border: 1px solid var(--border-light);
+  border-radius: var(--radius); padding: 6px 14px; font-size: 0.86rem;
+  color: var(--text-primary); transition: var(--transition);
+}
+.pick-chip:hover:not(:disabled) { border-color: var(--gold-dark); }
+.pick-chip.selected { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+.pick-chip:disabled { opacity: 0.35; cursor: not-allowed; }
+.pick-chip.fixed { border-style: dashed; color: var(--text-secondary); }
+.eq-group { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px; }
+.eq-group-title { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; }
+.eq-alt { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; color: var(--text-primary); font-size: 0.88rem; }
+.eq-alt:hover { border-color: var(--border-light); }
+.eq-alt.selected { border-color: var(--gold); background: var(--gold-glow); }
+.eq-picks { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px 4px; }
+.gold-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.gold-amt { font-family: var(--font-heading); font-size: 1.6rem; color: var(--gold-light); }
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 6px; }
+.field input[type=text], .field textarea, .field select {
+  width: 100%; background: var(--bg-tertiary); color: var(--text-primary);
+  border: 1px solid var(--border-light); border-radius: var(--radius);
+  padding: 9px 12px; font: inherit; font-size: 0.92rem;
+}
+.field textarea { resize: vertical; min-height: 60px; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--gold); }
+.field .sugg { margin-top: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.portrait-row { display: flex; align-items: center; gap: 18px; }
+.portrait-box { width: 110px; height: 110px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; overflow: hidden; }
+.portrait-box img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ================================================================
+   CHARACTER SHEET
+================================================================ */
+.sheet-wrap { max-width: 1000px; margin: 0 auto; padding: 24px 20px 70px; }
+.sheet-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.sheet-bar .spacer { flex: 1; }
+.sheet-head { display: flex; gap: 18px; align-items: center; margin-bottom: 20px; }
+.sheet-head .portrait-box { width: 96px; height: 96px; flex-shrink: 0; }
+.sheet-name { font-family: var(--font-heading); font-size: 2rem; color: var(--gold); line-height: 1.1; }
+.sheet-sub { color: var(--text-secondary); font-size: 0.92rem; margin-top: 4px; }
+.sheet-grid { display: grid; grid-template-columns: 200px 1fr; gap: 16px; }
+@media (max-width: 760px) { .sheet-grid { grid-template-columns: 1fr; } }
+.sheet-col { display: flex; flex-direction: column; gap: 14px; }
+.sheet-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; break-inside: avoid; }
+.sheet-card h4 { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; font-family: var(--font-body); font-weight: 700; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; }
+.stat-box { text-align: center; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 4px; }
+.stat-box .v { font-family: var(--font-heading); font-size: 1.5rem; color: var(--text-primary); }
+.stat-box .l { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.ab-box { text-align: center; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 4px; }
+.ab-box .l { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.ab-box .m { font-family: var(--font-heading); font-size: 1.6rem; }
+.ab-box .sc { font-size: 0.8rem; color: var(--text-secondary); }
+.prof-list { list-style: none; font-size: 0.84rem; }
+.prof-list li { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.prof-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--text-muted); flex-shrink: 0; }
+.prof-dot.on { background: var(--gold); border-color: var(--gold); }
+.prof-list .val { width: 28px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.sheet-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+.sheet-text b { color: var(--text-primary); font-weight: 600; }
+.sheet-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.sheet-table th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; padding: 2px 6px 4px 0; }
+.sheet-table td { padding: 3px 6px 3px 0; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+@media print {
+  :root {
+    --bg-primary: #fff; --bg-secondary: #fff; --bg-tertiary: #f3f3f3; --bg-card: #fff; --bg-hover: #eee;
+    --border: #bbb; --border-light: #999; --text-primary: #000; --text-secondary: #333; --text-muted: #666;
+    --gold: #6b4e12; --gold-light: #6b4e12; --gold-dark: #6b4e12; --gold-glow: #fff;
+  }
+  .no-print, .site-header { display: none !important; }
+  .sheet-wrap { padding: 0; max-width: none; }
+  .sheet-card, .stat-box, .ab-box { box-shadow: none; }
+  .sheet-grid, .two-col { gap: 8px; }
+}
+
 /* ================================================================
    TOAST
 ================================================================ */
@@ -696,6 +782,8 @@ const Store = {
       skillProficiencies: [],
       bonusLanguages: [],
       cantrips:     [],
+      spellNames:   {},     // spell index -> name
+      spellSlots1:  0,
       level1Spells: [],
       subclassChoice: null,
       fightingStyle:  null,
@@ -727,6 +815,12 @@ function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Move a character forward to `id`, never backwards and never out of 'complete'.
+function advanceStep(char, id) {
+  if (char.step === 'complete') return;
+  if (STEPS.findIndex(x => x.id === char.step) < STEPS.findIndex(x => x.id === id)) char.step = id;
 }
 
 function asiLabel(bonuses) {
@@ -761,6 +855,10 @@ const App = {
       case 'abilities': AbilityView.render(root, this.ctx); break;
       case 'background': BackgroundView.render(root, this.ctx); break;
       case 'choices': ChoicesView.render(root, this.ctx); break;
+      case 'skills': SkillsView.render(root, this.ctx); break;
+      case 'equipment': EquipmentView.render(root, this.ctx); break;
+      case 'details': DetailsView.render(root, this.ctx); break;
+      case 'sheet': SheetView.render(root, this.ctx); break;
       default:
         root.innerHTML = `<div class="loading"><p>Page not found</p></div>`;
     }
@@ -775,9 +873,8 @@ const App = {
   openCharacter(id) {
     const c = Store.one(id);
     if (!c) return;
-    // Route to the character's current step (race through choices are built so far)
-    const builtSteps = ['race', 'class', 'abilities', 'background', 'choices'];
-    const dest = builtSteps.includes(c.step) ? c.step : 'race';
+    const dest = c.step === 'complete' ? 'sheet'
+      : STEPS.some(x => x.id === c.step) ? c.step : 'race';
     App.go(dest, { charId: id });
   },
 
@@ -801,9 +898,12 @@ const HomeView = {
       <main class="home-main">
         <div class="home-top">
           <h1>Your Characters</h1>
-          <button class="btn btn-primary" onclick="App.newCharacter()">
-            ${I.plus} New Character
-          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="Transfer.pickImport()">Import JSON</button>
+            <button class="btn btn-primary" onclick="App.newCharacter()">
+              ${I.plus} New Character
+            </button>
+          </div>
         </div>
         <div class="char-grid">
           ${chars.length ? chars.map(c => this._card(c)).join('') : this._empty()}
@@ -832,14 +932,16 @@ const HomeView = {
     const subline = race
       ? (klass ? `${race} ${klass}` : `${race} · choose class next`)
       : 'In progress · choose race';
+    const stepLabel = STEPS.find(x => x.id === c.step)?.label;
 
     return `
       <div class="char-card" onclick="App.openCharacter('${c.id}')">
-        <div class="char-avatar">${icon}</div>
+        <div class="char-avatar">${c.portrait ? `<img src="${esc(c.portrait)}" alt="">` : icon}</div>
         ${!done ? `<div class="char-badge">In Progress</div>` : ''}
         <div class="char-card-body">
           <div class="char-name">${esc(name)}</div>
           <div class="char-subtitle">${esc(subline)}</div>
+          ${!done && stepLabel ? `<div class="char-subtitle" style="margin-top:2px;color:var(--text-muted)">Next: ${esc(stepLabel)}</div>` : ''}
         </div>
         <div class="char-card-actions" onclick="event.stopPropagation()">
           <button class="btn btn-ghost" style="font-size:0.78rem" onclick="App.openCharacter('${c.id}')">
@@ -1180,12 +1282,11 @@ const RaceView = {
       name:           sr.name,
       ability_bonuses: sr.ability_bonuses || [],
       racial_traits:  sr.racial_traits || [],
+      language_options: sr.language_options || null,
     } : null;
 
     // Advance, but never move a character backwards if they are re-editing race
-    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'class')) {
-      char.step = 'class';
-    }
+    advanceStep(char, 'class');
     Store.save(char);
     Toast.show(`${race.name} saved!`, 'success');
     App.go('class', { charId: this.charId });
@@ -1380,9 +1481,7 @@ const ClassView = {
       starting_equipment_options: k.starting_equipment_options || [],
     };
 
-    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'abilities')) {
-      char.step = 'abilities';
-    }
+    advanceStep(char, 'abilities');
     Store.save(char);
     Toast.show(`${k.name} saved!`, 'success');
     App.go('abilities', { charId: this.charId });
@@ -1559,9 +1658,7 @@ const AbilityView = {
     char.baseScores    = Object.fromEntries(ABILITY_KEYS.map(k => [k, this._base(k)]));
     char.rolledPool    = this.method === 'roll' ? this.pool : char.rolledPool || [];
     char.abilityAssign = this.method === 'pointbuy' ? {} : this.assign;
-    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'background')) {
-      char.step = 'background';
-    }
+    advanceStep(char, 'background');
     Store.save(char);
     Toast.show('Ability scores saved!', 'success');
     App.go('background', { charId: this.charId });
@@ -1757,6 +1854,7 @@ const BackgroundView = {
     // A different background invalidates previously chosen personality flavor
     if (char.background && char.background.index !== b.index) {
       char.personalityTraits = []; char.ideal = ''; char.bond = ''; char.flaw = '';
+      char.equipment = [];
     }
 
     char.background = {
@@ -1769,6 +1867,7 @@ const BackgroundView = {
       characteristics_text: b.characteristics_text || '',
       language_options:    b.language_options ? { choose: b.language_options.choose } : null,
       starting_equipment:  b.starting_equipment || [],
+      starting_equipment_options: b.starting_equipment_options || [],
       feature:             b.feature ? { name: b.feature.name, desc: b.feature.desc || [] } : null,
       personality_traits:  bgPool(b.personality_traits),
       ideals:              bgPool(b.ideals),
@@ -1776,9 +1875,7 @@ const BackgroundView = {
       flaws:               bgPool(b.flaws),
     };
 
-    if (STEPS.findIndex(s => s.id === char.step) < STEPS.findIndex(s => s.id === 'choices')) {
-      char.step = 'choices';
-    }
+    advanceStep(char, 'choices');
     Store.save(char);
     Toast.show(`${b.name} saved!`, 'success');
     App.go('choices', { charId: this.charId });
@@ -1832,7 +1929,7 @@ const ChoicesView = {
       const sc = lvl1.spellcasting || {};
       const casts = (sc.spell_slots_level_1 || 0) > 0 || (sc.cantrips_known || 0) > 0;
 
-      const need = { cantrips: 0, spells: 0, spellsLabel: 'Spells', subclass: null, styles: [] };
+      const need = { cantrips: 0, spells: 0, slots: sc.spell_slots_level_1 || 0, spellsLabel: 'Spells', subclass: null, styles: [] };
       this.lists = { cantrips: [], spells: [] };
 
       if (casts) {
@@ -2008,6 +2105,9 @@ const ChoicesView = {
     const char = Store.one(this.charId);
     if (!char) return;
     const n = this.need, s = this.sel;
+    char.spellNames = {};
+    [...this.lists.cantrips, ...this.lists.spells].forEach(x => { char.spellNames[x.index] = x.name; });
+    char.spellSlots1  = n.slots || 0;
     char.cantrips     = [...s.cantrips];
     char.level1Spells = [...s.spells];
     const sub = n.subclass?.options.find(o => o.index === s.subclass);
@@ -2015,12 +2115,602 @@ const ChoicesView = {
     const st = n.styles.find(o => o.index === s.style);
     char.fightingStyle = st ? { index: st.index, name: st.name.replace(/^Fighting Style: /, '') } : null;
 
-    if (STEPS.findIndex(x => x.id === char.step) < STEPS.findIndex(x => x.id === 'skills')) {
-      char.step = 'skills';
-    }
+    advanceStep(char, 'skills');
     Store.save(char);
     Toast.show('Class choices saved!', 'success');
-    App.go('home');
+    App.go('skills', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   SKILLS & LANGUAGES VIEW
+================================================================ */
+const SKILLS = [
+  ['acrobatics','Acrobatics','dex'], ['animal-handling','Animal Handling','wis'], ['arcana','Arcana','int'],
+  ['athletics','Athletics','str'], ['deception','Deception','cha'], ['history','History','int'],
+  ['insight','Insight','wis'], ['intimidation','Intimidation','cha'], ['investigation','Investigation','int'],
+  ['medicine','Medicine','wis'], ['nature','Nature','int'], ['perception','Perception','wis'],
+  ['performance','Performance','cha'], ['persuasion','Persuasion','cha'], ['religion','Religion','int'],
+  ['sleight-of-hand','Sleight of Hand','dex'], ['stealth','Stealth','dex'], ['survival','Survival','wis'],
+].map(([i, name, ab]) => ({ index: 'skill-' + i, name, ab }));
+
+// Skills a character already has from race and background
+function fixedSkillSet(char) {
+  const set = new Set();
+  (char.background?.skill_proficiencies || []).forEach(p => set.add(p.index));
+  (char.race?.starting_proficiencies || []).forEach(p => { if (p.index.startsWith('skill-')) set.add(p.index); });
+  return set;
+}
+
+function classSkillChoice(klass) {
+  for (const pc of klass?.proficiency_choices || []) {
+    const items = (pc.from?.options || []).map(o => o.item || o.of).filter(Boolean);
+    if (items.length && items.every(i => i.index.startsWith('skill-'))) return { choose: pc.choose, items };
+  }
+  return null;
+}
+
+function bonusLanguageCount(char) {
+  return (char.race?.language_options?.choose || 0)
+       + (char.subrace?.language_options?.choose || 0)
+       + (char.background?.language_options?.choose || 0);
+}
+
+const SkillsView = {
+  charId: null, fixed: new Set(), choice: null, langs: [], langNeed: 0, known: new Set(),
+  selSkills: new Set(), selLangs: new Set(),
+
+  render(root, { charId }) {
+    this.charId = charId;
+    root.innerHTML = wizardShell('skills',
+      `<div class="loading"><div class="spinner"></div><span>Loading…</span></div>`,
+      `<div style="display:flex;gap:10px">
+         <button class="btn btn-outline" onclick="App.go('choices', { charId: '${charId}' })">← Choices</button>
+         <button class="btn btn-primary" id="continue-btn" disabled onclick="SkillsView.save()">Save &amp; Continue →</button>
+       </div>`);
+    this._load();
+  },
+
+  async _load() {
+    try {
+      const char = Store.one(this.charId);
+      this.fixed   = fixedSkillSet(char);
+      this.choice  = classSkillChoice(char.klass);
+      this.langNeed = bonusLanguageCount(char);
+      this.known   = new Set((char.race?.languages || []).map(l => l.index));
+      this.langs   = this.langNeed ? (await Api.get('/languages')).results : [];
+      const skillOk = new Set((this.choice?.items || []).map(i => i.index));
+      this.selSkills = new Set((char.skillProficiencies || []).filter(i => skillOk.has(i) && !this.fixed.has(i)));
+      const langOk = new Set(this.langs.map(l => l.index));
+      this.selLangs = new Set((char.bonusLanguages || []).map(l => l.index).filter(i => langOk.has(i) && !this.known.has(i)));
+      this._draw();
+    } catch (e) {
+      document.getElementById('wizard-body').innerHTML = `<div class="error-box"><p>Failed to load: ${esc(e.message)}</p>
+        <button class="btn btn-outline" onclick="SkillsView._load()">Retry</button></div>`;
+    }
+  },
+
+  _draw() {
+    const c = this.choice, n = c?.choose || 0;
+    const skillsFull = this.selSkills.size >= n;
+    const langsFull = this.selLangs.size >= this.langNeed;
+    document.getElementById('wizard-body').innerHTML = `<div class="form-main">
+      <h2>Skills &amp; Languages</h2>
+      <p class="choices-sub">Proficiencies from your race and background are applied automatically.</p>
+      ${this.fixed.size ? `<div class="section"><div class="section-label">Already Proficient</div>
+        <div class="pick-grid">${[...this.fixed].map(i => `<span class="pick-chip fixed">${esc(SKILLS.find(x => x.index === i)?.name || i)}</span>`).join('')}</div></div>` : ''}
+      ${c ? `<div class="section"><div class="section-label">Class Skills — <span class="pick-count">${this.selSkills.size} / ${n}</span></div>
+        <div class="pick-grid">${c.items.map(it => {
+          const dup = this.fixed.has(it.index), on = this.selSkills.has(it.index);
+          return `<button class="pick-chip ${on ? 'selected' : ''}" ${dup || (!on && skillsFull) ? 'disabled' : ''}
+            onclick="SkillsView.toggle('selSkills','${it.index}', ${n})">${esc(it.name.replace(/^Skill: /, ''))}</button>`;
+        }).join('')}</div></div>` : ''}
+      ${this.langNeed ? `<div class="section"><div class="section-label">Bonus Languages — <span class="pick-count">${this.selLangs.size} / ${this.langNeed}</span></div>
+        <div class="pick-grid">${this.langs.map(l => {
+          const dup = this.known.has(l.index), on = this.selLangs.has(l.index);
+          return `<button class="pick-chip ${on ? 'selected' : ''}" ${dup || (!on && langsFull) ? 'disabled' : ''}
+            onclick="SkillsView.toggle('selLangs','${l.index}', ${this.langNeed})">${esc(l.name)}</button>`;
+        }).join('')}</div></div>` : ''}
+      ${!c && !this.langNeed ? '<p class="choices-sub">Nothing to choose here.</p>' : ''}
+    </div>`;
+    const ok = this._valid();
+    document.getElementById('continue-btn').disabled = !ok;
+    document.getElementById('footer-hint').textContent = ok ? 'Skills & languages ready!' : 'Make all required picks to continue.';
+  },
+
+  toggle(key, index, max) {
+    const set = this[key];
+    if (set.has(index)) set.delete(index); else if (set.size < max) set.add(index);
+    this._draw();
+  },
+
+  _valid() { return this.selSkills.size === (this.choice?.choose || 0) && this.selLangs.size === this.langNeed; },
+
+  save() {
+    if (!this._valid()) return;
+    const char = Store.one(this.charId);
+    char.skillProficiencies = [...this.selSkills];
+    char.bonusLanguages = this.langs.filter(l => this.selLangs.has(l.index)).map(l => ({ index: l.index, name: l.name }));
+    advanceStep(char, 'equipment');
+    Store.save(char);
+    Toast.show('Skills saved!', 'success');
+    App.go('equipment', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   EQUIPMENT VIEW
+================================================================ */
+// Starting wealth if you skip equipment: [dice, sides, multiplier]
+const START_GOLD = {
+  barbarian: [2,4,10], bard: [5,4,10], cleric: [5,4,10], druid: [2,4,10], fighter: [5,4,10], monk: [5,4,1],
+  paladin: [5,4,10], ranger: [5,4,10], rogue: [4,4,10], sorcerer: [3,4,10], warlock: [4,4,10], wizard: [4,4,10],
+};
+
+// Turn an API equipment option into parts: fixed items, or "pick N from a category"
+function eqParseOption(o) {
+  switch (o.option_type) {
+    case 'counted_reference': return [{ fixed: { index: o.of.index, name: o.of.name, qty: o.count } }];
+    case 'reference': return [{ fixed: { index: o.item.index, name: o.item.name, qty: 1 } }];
+    case 'choice': {
+      const f = o.choice.from;
+      return f?.equipment_category ? [{ pick: { n: o.choice.choose || 1, cat: f.equipment_category.index, catName: f.equipment_category.name } }] : [];
+    }
+    case 'multiple': return (o.items || []).flatMap(eqParseOption);
+    default: return [];
+  }
+}
+function eqParseGroup(g, source) {
+  const f = g.from || {};
+  const alts = f.option_set_type === 'equipment_category' && f.equipment_category
+    ? [[{ pick: { n: g.choose || 1, cat: f.equipment_category.index, catName: f.equipment_category.name } }]]
+    : (f.options || []).map(eqParseOption).filter(a => a.length);
+  return { source, desc: g.desc || '', alts };
+}
+function eqPartLabel(part) {
+  if (part.fixed) return (part.fixed.qty > 1 ? part.fixed.qty + '× ' : '') + part.fixed.name;
+  return `${part.pick.n > 1 ? part.pick.n + '× ' : ''}any ${part.pick.catName.toLowerCase()}`;
+}
+
+const EquipmentView = {
+  charId: null, groups: [], cats: {}, alt: {}, picks: {}, useGold: false, gold: 0,
+
+  render(root, { charId }) {
+    this.charId = charId;
+    root.innerHTML = wizardShell('equipment',
+      `<div class="loading"><div class="spinner"></div><span>Loading equipment…</span></div>`,
+      `<div style="display:flex;gap:10px">
+         <button class="btn btn-outline" onclick="App.go('skills', { charId: '${charId}' })">← Skills</button>
+         <button class="btn btn-primary" id="continue-btn" disabled onclick="EquipmentView.save()">Save &amp; Continue →</button>
+       </div>`);
+    this._load();
+  },
+
+  async _load() {
+    try {
+      const char = Store.one(this.charId);
+      this.groups = [
+        ...(char.klass?.starting_equipment_options || []).map(g => eqParseGroup(g, 'class')),
+        ...(char.background?.starting_equipment_options || []).map(g => eqParseGroup(g, 'background')),
+      ].filter(g => g.alts.length);
+      const cats = new Set(this.groups.flatMap(g => g.alts.flat().filter(p => p.pick).map(p => p.pick.cat)));
+      await Promise.all([...cats].map(async c => {
+        const d = await Api.get(`/equipment-categories/${c}`);
+        this.cats[c] = [...(d.equipment || [])].sort((a, b) => a.name.localeCompare(b.name));
+      }));
+      this.alt = {}; this.picks = {};
+      this.groups.forEach((g, gi) => { if (g.alts.length === 1) this.alt[gi] = 0; });
+      this.useGold = !!char.useGold;
+      this.gold = char.startGold || 0;
+      this._draw();
+    } catch (e) {
+      document.getElementById('wizard-body').innerHTML = `<div class="error-box"><p>Failed to load: ${esc(e.message)}</p>
+        <button class="btn btn-outline" onclick="EquipmentView._load()">Retry</button></div>`;
+    }
+  },
+
+  _active() { return this.groups.map((g, gi) => ({ g, gi })).filter(x => !(this.useGold && x.g.source === 'class')); },
+
+  _draw() {
+    const char = Store.one(this.charId);
+    const fixedClass = this.useGold ? [] : (char.klass?.starting_equipment || []);
+    const fixedBg = char.background?.starting_equipment || [];
+    const fmt = e => `<span class="pick-chip fixed">${e.quantity > 1 ? e.quantity + '× ' : ''}${esc(e.equipment.name)}</span>`;
+    const gr = START_GOLD[char.klass?.index];
+
+    const groupHtml = this._active().map(({ g, gi }) => {
+      const sel = this.alt[gi];
+      return `<div class="eq-group">
+        <div class="eq-group-title">${esc(g.source === 'class' ? char.klass.name : char.background.name)} — choose one</div>
+        ${g.alts.map((parts, ai) => `
+          <button class="eq-alt ${sel === ai ? 'selected' : ''}" onclick="EquipmentView.setAlt(${gi},${ai})">
+            ${esc(parts.map(eqPartLabel).join(' + '))}
+          </button>`).join('')}
+        ${sel != null ? g.alts[sel].map((part, pi) => !part.pick ? '' : `
+          <div class="eq-picks">${Array.from({ length: part.pick.n }, (_, slot) => {
+            const key = `${gi}.${pi}.${slot}`;
+            return `<select class="abil-select" style="max-width:260px" onchange="EquipmentView.setPick('${key}', this.value)">
+              <option value="">— ${esc(part.pick.catName)} —</option>
+              ${(this.cats[part.pick.cat] || []).map(it =>
+                `<option value="${it.index}" ${this.picks[key] === it.index ? 'selected' : ''}>${esc(it.name)}</option>`).join('')}
+            </select>`;
+          }).join('')}</div>`).join('') : ''}
+      </div>`;
+    }).join('');
+
+    document.getElementById('wizard-body').innerHTML = `<div class="form-main">
+      <h2>Equipment</h2>
+      <p class="choices-sub">Starting gear from your class and background.</p>
+      ${gr ? `<div class="section"><div class="section-label">Starting Gold Alternative</div>
+        <div class="gold-box">
+          <button class="pick-chip ${this.useGold ? 'selected' : ''}" onclick="EquipmentView.toggleGold()">
+            Take gold instead of class equipment</button>
+          ${this.useGold ? `<button class="btn btn-outline" onclick="EquipmentView.rollGold()">${I.d20} ${this.gold ? 'Reroll' : 'Roll'} ${gr[0]}d${gr[1]}${gr[2] > 1 ? ' × ' + gr[2] : ''}</button>
+            <span class="gold-amt">${this.gold ? this.gold + ' gp' : ''}</span>` : ''}
+        </div></div>` : ''}
+      ${fixedClass.length || fixedBg.length ? `<div class="section"><div class="section-label">You Receive</div>
+        <div class="pick-grid">${[...fixedClass, ...fixedBg].map(fmt).join('')}</div></div>` : ''}
+      ${groupHtml ? `<div class="section"><div class="section-label">Choices</div>${groupHtml}</div>` : ''}
+    </div>`;
+    const ok = this._valid();
+    document.getElementById('continue-btn').disabled = !ok;
+    document.getElementById('footer-hint').textContent = ok ? 'Equipment ready!'
+      : this.useGold && !this.gold ? 'Roll your starting gold to continue.' : 'Make all equipment choices to continue.';
+  },
+
+  setAlt(gi, ai) {
+    this.alt[gi] = ai;
+    Object.keys(this.picks).filter(k => k.startsWith(gi + '.')).forEach(k => delete this.picks[k]);
+    this._draw();
+  },
+  setPick(key, val) { if (val) this.picks[key] = val; else delete this.picks[key]; this._draw(); },
+  toggleGold() { this.useGold = !this.useGold; if (!this.useGold) this.gold = 0; this._draw(); },
+  rollGold() {
+    const [n, sides, mult] = START_GOLD[Store.one(this.charId).klass.index];
+    let t = 0; for (let i = 0; i < n; i++) t += 1 + Math.floor(Math.random() * sides);
+    this.gold = t * mult; this._draw();
+  },
+
+  _valid() {
+    if (this.useGold && !this.gold) return false;
+    return this._active().every(({ g, gi }) => {
+      const a = this.alt[gi];
+      if (a == null) return false;
+      return g.alts[a].every((part, pi) => !part.pick ||
+        Array.from({ length: part.pick.n }, (_, slot) => this.picks[`${gi}.${pi}.${slot}`]).every(Boolean));
+    });
+  },
+
+  _resolve(char) {
+    const out = new Map();
+    const add = (index, name, qty) => {
+      const k = index || name;
+      if (out.has(k)) out.get(k).quantity += qty; else out.set(k, { index: index || null, name, quantity: qty });
+    };
+    if (!this.useGold) (char.klass?.starting_equipment || []).forEach(e => add(e.equipment.index, e.equipment.name, e.quantity));
+    (char.background?.starting_equipment || []).forEach(e => add(e.equipment.index, e.equipment.name, e.quantity));
+    this._active().forEach(({ g, gi }) => {
+      g.alts[this.alt[gi]].forEach((part, pi) => {
+        if (part.fixed) add(part.fixed.index, part.fixed.name, part.fixed.qty);
+        else for (let slot = 0; slot < part.pick.n; slot++) {
+          const idx = this.picks[`${gi}.${pi}.${slot}`];
+          const it = (this.cats[part.pick.cat] || []).find(x => x.index === idx);
+          if (it) add(it.index, it.name, 1);
+        }
+      });
+    });
+    return [...out.values()];
+  },
+
+  save() {
+    if (!this._valid()) return;
+    const char = Store.one(this.charId);
+    char.equipment = this._resolve(char);
+    char.useGold = this.useGold;
+    char.startGold = this.useGold ? this.gold : 0;
+    advanceStep(char, 'details');
+    Store.save(char);
+    Toast.show('Equipment saved!', 'success');
+    App.go('details', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   DETAILS VIEW
+================================================================ */
+const ALIGNMENTS = ['Lawful Good','Neutral Good','Chaotic Good','Lawful Neutral','True Neutral','Chaotic Neutral','Lawful Evil','Neutral Evil','Chaotic Evil'];
+
+const DetailsView = {
+  charId: null, portrait: null,
+
+  render(root, { charId }) {
+    this.charId = charId;
+    const c = Store.one(charId);
+    this.portrait = c.portrait || null;
+    const bg = c.background || {};
+    const traits = c.personalityTraits || [];
+    const sugg = (pool, target) => pool?.options?.length ? `<div class="sugg">Suggestions:
+      <select class="abil-select" style="max-width:100%" onchange="DetailsView.fill('${target}', this)">
+        <option value="">— pick one to fill —</option>
+        ${pool.options.map(o => `<option>${esc(o)}</option>`).join('')}</select></div>` : '';
+    const area = (id, label, val, pool) => `<div class="field"><label for="${id}">${label}</label>
+      <textarea id="${id}" rows="2">${esc(val)}</textarea>${sugg(pool, id)}</div>`;
+
+    root.innerHTML = wizardShell('details', `<div class="form-main">
+      <h2>Character Details</h2>
+      <p class="choices-sub">Give your character a name and a personality.</p>
+      <div class="field"><label>Portrait (optional)</label>
+        <div class="portrait-row"><div class="portrait-box" id="portrait-box"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="btn btn-outline" style="cursor:pointer">Upload image
+              <input type="file" accept="image/*" hidden onchange="DetailsView.upload(this.files[0])"></label>
+            <button class="btn btn-ghost" onclick="DetailsView.clearPortrait()">Remove</button>
+          </div></div></div>
+      <div class="field"><label for="d-name">Name</label>
+        <input type="text" id="d-name" maxlength="60" value="${esc(c.name)}" oninput="DetailsView.sync()"></div>
+      <div class="field"><label for="d-align">Alignment</label>
+        <select id="d-align" onchange="DetailsView.sync()"><option value="">— choose —</option>
+          ${ALIGNMENTS.map(a => `<option ${c.alignment === a ? 'selected' : ''}>${a}</option>`).join('')}</select></div>
+      ${area('d-trait0', 'Personality Trait 1', traits[0] || '', bg.personality_traits)}
+      ${area('d-trait1', 'Personality Trait 2', traits[1] || '', bg.personality_traits)}
+      ${area('d-ideal', 'Ideal', c.ideal, bg.ideals)}
+      ${area('d-bond', 'Bond', c.bond, bg.bonds)}
+      ${area('d-flaw', 'Flaw', c.flaw, bg.flaws)}
+      ${bg.characteristics_text ? `<div class="section"><div class="section-label">Suggested Characteristics</div>
+        <p class="sheet-text" style="white-space:pre-line">${esc(bg.characteristics_text)}</p></div>` : ''}
+    </div>`,
+    `<div style="display:flex;gap:10px">
+       <button class="btn btn-outline" onclick="DetailsView.persist();App.go('equipment', { charId: '${charId}' })">← Equipment</button>
+       <button class="btn btn-primary" id="continue-btn" disabled onclick="DetailsView.save()">Finish ✓</button>
+     </div>`);
+    this._drawPortrait();
+    this.sync();
+  },
+
+  _v(id) { return (document.getElementById(id)?.value || '').trim(); },
+  fill(id, sel) { if (sel.value) { document.getElementById(id).value = sel.value; sel.value = ''; } },
+
+  sync() {
+    const ok = !!this._v('d-name') && !!this._v('d-align');
+    document.getElementById('continue-btn').disabled = !ok;
+    document.getElementById('footer-hint').textContent = ok ? 'Ready to finish!' : 'Enter a name and alignment to finish.';
+  },
+
+  _drawPortrait() {
+    const c = Store.one(this.charId);
+    document.getElementById('portrait-box').innerHTML = this.portrait
+      ? `<img src="${esc(this.portrait)}" alt="Portrait">` : (RACE_ICONS[c.race?.index] || '🎲');
+  },
+  clearPortrait() { this.portrait = null; this._drawPortrait(); },
+
+  upload(file) {
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      // Downscale to keep localStorage small
+      const max = 320, scale = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      this.portrait = cv.toDataURL('image/jpeg', 0.82);
+      URL.revokeObjectURL(url);
+      this._drawPortrait();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); Toast.show('Could not read that image.', 'error'); };
+    img.src = url;
+  },
+
+  persist(char = Store.one(this.charId)) {
+    char.portrait = this.portrait;
+    char.name = this._v('d-name');
+    char.alignment = document.getElementById('d-align').value;
+    char.personalityTraits = [this._v('d-trait0'), this._v('d-trait1')].filter(Boolean);
+    char.ideal = this._v('d-ideal'); char.bond = this._v('d-bond'); char.flaw = this._v('d-flaw');
+    Store.save(char);
+  },
+
+  save() {
+    const char = Store.one(this.charId);
+    this.persist(char);
+    char.step = 'complete';
+    Store.save(char);
+    Toast.show(`${char.name} is ready!`, 'success');
+    App.go('sheet', { charId: this.charId });
+  },
+};
+
+/* ================================================================
+   EXPORT / IMPORT
+================================================================ */
+const Transfer = {
+  exportChar(id) {
+    const c = Store.one(id);
+    if (!c) return;
+    const blob = new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(c.name || 'character').replace(/[^\w-]+/g, '_')}.dnd5e.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+
+  pickImport() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = () => inp.files[0] && this.importFile(inp.files[0]);
+    inp.click();
+  },
+
+  async importFile(file) {
+    try {
+      const c = JSON.parse(await file.text());
+      if (!c || typeof c !== 'object' || !('race' in c) || !('baseScores' in c)) throw new Error('Not a character file');
+      const merged = { ...Store.blank(), ...c };
+      if (Store.one(merged.id) || !merged.id) merged.id = crypto.randomUUID();  // never overwrite an existing character
+      Store.save(merged);
+      Toast.show(`Imported ${merged.name || 'character'}.`, 'success');
+      App.render();
+    } catch (e) {
+      Toast.show('Import failed: ' + e.message, 'error');
+    }
+  },
+};
+
+/* ================================================================
+   CHARACTER SHEET
+================================================================ */
+// All derived numbers in one place; `gear` maps equipment index -> API detail
+function deriveStats(c, gear = {}) {
+  const score = {}, mod = {};
+  ABILITY_KEYS.forEach(k => { score[k] = finalScore(c, k); mod[k] = abilityMod(score[k]); });
+  const prof = 2;
+  const saves = new Set((c.klass?.saving_throws || []).map(s => s.index));
+  const skillProf = new Set([...fixedSkillSet(c), ...(c.skillProficiencies || [])]);
+
+  const items = (c.equipment || []).map(e => gear[e.index]).filter(Boolean);
+  const body = items.find(i => i.equipment_category?.index === 'armor' && i.armor_category !== 'Shield');
+  const shield = items.find(i => i.armor_category === 'Shield');
+  let ac;
+  if (body) {
+    const a = body.armor_class || {};
+    ac = (a.base || 10) + (a.dex_bonus ? (a.max_bonus != null ? Math.min(mod.dex, a.max_bonus) : mod.dex) : 0);
+  } else if (c.klass?.index === 'barbarian') ac = 10 + mod.dex + mod.con;
+  else if (c.klass?.index === 'monk') ac = 10 + mod.dex + mod.wis;
+  else ac = 10 + mod.dex;
+  if (shield) ac += shield.armor_class?.base || 2;
+
+  const hp = (c.klass?.hit_die || 8) + mod.con + (c.subrace?.index === 'hill-dwarf' ? 1 : 0);
+  const skills = SKILLS.map(sk => ({ ...sk, prof: skillProf.has(sk.index), total: mod[sk.ab] + (skillProf.has(sk.index) ? prof : 0) }));
+
+  const profNames = new Set((c.klass?.proficiencies || []).map(p => p.name));
+  const attacks = items.filter(i => i.equipment_category?.index === 'weapon').map(w => {
+    const finesse = (w.properties || []).some(p => p.index === 'finesse');
+    const ranged = w.weapon_range === 'Ranged';
+    const abMod = ranged ? mod.dex : finesse ? Math.max(mod.str, mod.dex) : mod.str;
+    const proficient = profNames.has(`${w.weapon_category} Weapons`) || profNames.has(w.name);
+    const bonus = abMod + (proficient ? prof : 0);
+    return { name: w.name, bonus, damage: `${w.damage?.damage_dice || '—'}${abMod ? fmtMod(abMod) : ''} ${w.damage?.damage_type?.name || ''}`.trim() };
+  });
+
+  const cast = c.klass?.spellcasting?.ability;
+  const spell = cast ? { ability: cast, dc: 8 + prof + mod[cast], attack: prof + mod[cast] } : null;
+  return { score, mod, prof, saves, skills, ac, hp, initiative: mod.dex, speed: c.race?.speed,
+           passive: 10 + (skills.find(s => s.index === 'skill-perception')?.total || 0), attacks, spell };
+}
+
+const SheetView = {
+  async render(root, { charId }) {
+    const c = Store.one(charId);
+    if (!c) { App.go('home'); return; }
+    root.innerHTML = `<div class="loading"><div class="spinner"></div><span>Building sheet…</span></div>`;
+    const gear = {};
+    await Promise.all((c.equipment || []).filter(e => e.index).map(async e => {
+      try { gear[e.index] = await Api.get(`/equipment/${e.index}`); } catch { /* sheet works without gear detail */ }
+    }));
+    root.innerHTML = this._html(c, deriveStats(c, gear));
+  },
+
+  _html(c, st) {
+    const list = a => a.length ? a.map(esc).join(', ') : '—';
+    const langs = [...(c.race?.languages || []).map(l => l.name), ...(c.bonusLanguages || []).map(l => l.name)];
+    const profs = [
+      ...(c.klass?.proficiencies || []).filter(p => !p.index.startsWith('saving-throw-')).map(p => p.name),
+      ...(c.race?.starting_proficiencies || []).filter(p => !p.index.startsWith('skill-')).map(p => p.name),
+    ];
+    if (c.background?.tool_text) profs.push(c.background.tool_text);
+    const traits = [...(c.race?.traits || []), ...(c.subrace?.racial_traits || [])].map(t => t.name);
+    const sp = c.spellNames || {};
+    const sub = [c.subclassChoice?.name, c.fightingStyle ? 'Fighting Style: ' + c.fightingStyle.name : ''].filter(Boolean);
+    const title = [c.subrace?.name || c.race?.name, c.klass?.name].filter(Boolean).join(' ');
+    const stepBtns = STEPS.map(s => `<button class="btn btn-ghost" onclick="App.go('${s.id}', { charId: '${c.id}' })">${s.label}</button>`).join('');
+
+    return `<div class="sheet-wrap">
+      <div class="sheet-bar no-print">
+        <button class="btn btn-ghost" onclick="App.go('home')">${I.back} Home</button>
+        <span class="spacer"></span>
+        <button class="btn btn-outline" onclick="window.print()">Print</button>
+        <button class="btn btn-outline" onclick="Transfer.exportChar('${c.id}')">Export JSON</button>
+      </div>
+      <div class="sheet-head">
+        <div class="portrait-box">${c.portrait ? `<img src="${esc(c.portrait)}" alt="">` : (RACE_ICONS[c.race?.index] || '🎲')}</div>
+        <div>
+          <div class="sheet-name">${esc(c.name || 'Unnamed Adventurer')}</div>
+          <div class="sheet-sub">${esc(title)} · Level 1 · ${esc(c.background?.name || '')}${c.alignment ? ' · ' + esc(c.alignment) : ''}</div>
+        </div>
+      </div>
+
+      <div class="sheet-grid">
+        <div class="sheet-col">
+          ${ABILITY_KEYS.map(k => `<div class="ab-box"><div class="l">${ABILITY_FULL[k]}</div>
+            <div class="m">${fmtMod(st.mod[k])}</div><div class="sc">${st.score[k]}</div></div>`).join('')}
+          <div class="sheet-card"><h4>Saving Throws</h4><ul class="prof-list">
+            ${ABILITY_KEYS.map(k => { const on = st.saves.has(k); return `<li><span class="prof-dot ${on ? 'on' : ''}"></span>
+              <span class="val">${fmtMod(st.mod[k] + (on ? st.prof : 0))}</span>${ABILITY_FULL[k]}</li>`; }).join('')}
+          </ul></div>
+          <div class="sheet-card"><h4>Skills</h4><ul class="prof-list">
+            ${st.skills.map(sk => `<li><span class="prof-dot ${sk.prof ? 'on' : ''}"></span>
+              <span class="val">${fmtMod(sk.total)}</span>${esc(sk.name)} <span style="color:var(--text-muted);font-size:0.7rem">(${sk.ab.toUpperCase()})</span></li>`).join('')}
+          </ul></div>
+        </div>
+
+        <div class="sheet-col">
+          <div class="stat-row">
+            <div class="stat-box"><div class="v">${st.ac}</div><div class="l">Armor Class</div></div>
+            <div class="stat-box"><div class="v">${fmtMod(st.initiative)}</div><div class="l">Initiative</div></div>
+            <div class="stat-box"><div class="v">${st.speed ?? '—'}</div><div class="l">Speed (ft)</div></div>
+            <div class="stat-box"><div class="v">${st.hp}</div><div class="l">Hit Points</div></div>
+            <div class="stat-box"><div class="v">d${c.klass?.hit_die ?? '—'}</div><div class="l">Hit Die</div></div>
+            <div class="stat-box"><div class="v">+${st.prof}</div><div class="l">Proficiency</div></div>
+            <div class="stat-box"><div class="v">${st.passive}</div><div class="l">Passive Perception</div></div>
+          </div>
+
+          ${st.attacks.length ? `<div class="sheet-card"><h4>Attacks</h4><table class="sheet-table">
+            <tr><th>Weapon</th><th>Attack</th><th>Damage</th></tr>
+            ${st.attacks.map(a => `<tr><td>${esc(a.name)}</td><td>${fmtMod(a.bonus)}</td><td>${esc(a.damage)}</td></tr>`).join('')}
+          </table></div>` : ''}
+
+          ${st.spell ? `<div class="sheet-card"><h4>Spellcasting</h4>
+            <div class="stat-row" style="margin-bottom:10px">
+              <div class="stat-box"><div class="v">${esc(ABILITY_FULL[st.spell.ability])}</div><div class="l">Ability</div></div>
+              <div class="stat-box"><div class="v">${st.spell.dc}</div><div class="l">Spell Save DC</div></div>
+              <div class="stat-box"><div class="v">${fmtMod(st.spell.attack)}</div><div class="l">Spell Attack</div></div>
+              <div class="stat-box"><div class="v">${c.spellSlots1 || 0}</div><div class="l">1st-Level Slots</div></div>
+            </div>
+            <div class="sheet-text">
+              ${c.cantrips?.length ? `<p><b>Cantrips:</b> ${list(c.cantrips.map(i => sp[i] || i))}</p>` : ''}
+              ${c.level1Spells?.length ? `<p><b>1st Level:</b> ${list(c.level1Spells.map(i => sp[i] || i))}</p>` : ''}
+            </div></div>` : ''}
+
+          <div class="two-col">
+            <div class="sheet-card"><h4>Features &amp; Traits</h4><div class="sheet-text">
+              ${traits.length ? `<p><b>Racial:</b> ${list(traits)}</p>` : ''}
+              ${sub.length ? `<p><b>Class:</b> ${list(sub)}</p>` : ''}
+              ${c.background?.feature ? `<p><b>${esc(c.background.feature.name)}:</b> ${esc((c.background.feature.desc || [])[0] || '')}</p>` : ''}
+            </div></div>
+            <div class="sheet-card"><h4>Proficiencies &amp; Languages</h4><div class="sheet-text">
+              <p><b>Languages:</b> ${list(langs)}</p>
+              <p><b>Other:</b> ${list(profs)}</p>
+            </div></div>
+          </div>
+
+          <div class="sheet-card"><h4>Equipment</h4><div class="sheet-text">
+            ${c.useGold ? `<p><b>Starting gold:</b> ${c.startGold} gp</p>` : ''}
+            ${c.equipment?.length ? list(c.equipment.map(e => (e.quantity > 1 ? e.quantity + '× ' : '') + e.name)) : '—'}
+          </div></div>
+
+          <div class="sheet-card"><h4>Personality</h4><div class="sheet-text">
+            ${c.personalityTraits?.length ? `<p><b>Traits:</b> ${list(c.personalityTraits)}</p>` : ''}
+            ${c.ideal ? `<p><b>Ideal:</b> ${esc(c.ideal)}</p>` : ''}
+            ${c.bond ? `<p><b>Bond:</b> ${esc(c.bond)}</p>` : ''}
+            ${c.flaw ? `<p><b>Flaw:</b> ${esc(c.flaw)}</p>` : ''}
+          </div></div>
+        </div>
+      </div>
+
+      <div class="sheet-card no-print" style="margin-top:18px"><h4>Edit a Step</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${stepBtns}</div></div>
+    </div>`;
   },
 };
 

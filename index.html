@@ -822,6 +822,11 @@ const I = {
 /* ================================================================
    API LAYER  (fetch + localStorage cache)
 ================================================================ */
+// crypto.randomUUID only exists in secure contexts (HTTPS/localhost); fall back for plain-HTTP LAN use.
+const uuid = () => crypto.randomUUID ? crypto.randomUUID()
+  : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+
 const Api = {
   _mem: null,
   _cache() {
@@ -871,7 +876,7 @@ const Store = {
   },
   blank() {
     return {
-      id: crypto.randomUUID(),
+      id: uuid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       step: 'race',         // current creation step
@@ -2660,7 +2665,7 @@ const Transfer = {
       const c = JSON.parse(await file.text());
       if (!c || typeof c !== 'object' || !('race' in c) || !('baseScores' in c)) throw new Error('Not a character file');
       const merged = { ...Store.blank(), ...c };
-      if (Store.one(merged.id) || !merged.id) merged.id = crypto.randomUUID();  // never overwrite an existing character
+      if (Store.one(merged.id) || !merged.id) merged.id = uuid();  // never overwrite an existing character
       Store.save(merged);
       Toast.show(`Imported ${merged.name || 'character'}.`, 'success');
       App.render();

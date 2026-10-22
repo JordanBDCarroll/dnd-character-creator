@@ -29,10 +29,13 @@ GET /api/2014/classes                        — list of 12 SRD classes
 GET /api/2014/classes/{index}                — class detail (hit die, proficiencies, spellcasting)
 GET /api/2014/backgrounds                    — list of SRD backgrounds
 GET /api/2014/backgrounds/{index}            — background detail (skills, languages, equipment, feature)
-GET /api/2014/classes/{index}/levels/1       — level-1 spellcasting counts
+GET /api/2014/classes/{index}/levels         — all 20 levels: features, spell slots, ASIs, class resources
 GET /api/2014/classes/{index}/spells         — class spell list (filter by level 0 / 1)
 GET /api/2014/spells/{index}                 — spell description (lazy)
 GET /api/2014/subclasses/{index}             — subclass detail
+GET /api/2014/subclasses/{index}/levels      — subclass features by level
+GET /api/2014/features/{index}               — feature description (lazy)
+GET /api/2014/feats                          — feat list
 GET /api/2014/features/fighter-fighting-style — fighting style options
 GET /api/2014/skills                         — full skill list with governing ability scores
 GET /api/2014/languages                      — language list
@@ -96,6 +99,12 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
   bonusLanguages:     [{ index, name }],  // languages chosen
   cantrips:           [String],  // spell indices
   level1Spells:       [String],
+  level:              Number,   // 1–20
+  raceAbilityChoices: [String], // Half-elf free +1s
+  asi:                { [level]: { mode, a, b, feat } },
+  racialProficiencies, toolProficiencies, expertise, dragonAncestry, draconicAncestry,
+  racialCantrips, favoredEnemies, favoredTerrains, spells, spellSlots, spellLevels, spellNames,
+  appearance, backstory, allies, notes,
   subclassChoice:     { index, name }|null,
   fightingStyle:      { index, name }|null,
   equipment:          [{ index, name, quantity }],
@@ -178,11 +187,21 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 ### ✅ v9 — JSON export / import
 - Export from the sheet, import from the home page (never overwrites an existing character)
 
+### ✅ v10 — rules completeness
+- **Levels 1–20:** pick a level on the Class step. Proficiency bonus, HP (max die at 1st, average after, + CON), spell slots, cantrips / spells known or prepared, class features by level, resources (rage, sneak attack, …) all follow the class level table (`/classes/{x}/levels`).
+- **Ability Score Improvements** at the class's ASI levels (+2 / +1 +1 / feat, capped at 20); feats come from `/feats` (the SRD only has Grappler).
+- **Subclass** chosen at its real level (e.g. Wizard 2, Fighter 3); subclass features listed on the sheet.
+- **Race choices:** Half-elf free +1s and skills, Dragonborn ancestry (breath weapon, resistance), High Elf cantrip, Dwarf tool pick.
+- **Class choices:** Fighting Style (Fighter 1, Paladin/Ranger 2), Ranger favored enemy/terrain, Rogue/Bard expertise, Bard/Monk instrument/tool picks, Life Domain spells, Draconic Sorcerer ancestry.
+- **Sheet:** feature/trait/spell descriptions (loaded on expand; "Print with descriptions" opens them all), spell slots, hit dice, death saves, currency, carry weight vs capacity, armor/weapon/tool proficiencies, unarmed strike, appearance, backstory, allies, notes.
+- Characters saved by older versions are migrated automatically on load.
+
 ### Known limitations
-- Level 1 characters only
-- Half-elf's two free +1 ability scores and Skill Versatility are not handled (API models them as options)
-- Ranger favored enemy, tool/instrument proficiency choices, and expertise are not covered
-- Everything beyond the happy path was tested against mocked API responses, not the live APIs
+- No multiclassing; no Mystic Arcanum / Eldritch Knight / Arcane Trickster spellcasting.
+- Class options not tracked as choices (Eldritch Invocations, Metamagic, Battle Master maneuvers, Pact Boon, Land druid spells, …). Use the Notes field; the feature text is on the sheet.
+- Only SRD content comes from the API (one subclass per class, one cleric domain); extra backgrounds come from Open5e.
+- Favored enemy language, Dragonborn/Sorcerer extra languages, and spell-slot / HP tracking during play are not handled (the sheet is a build sheet, not a play tracker).
+- Tested against mocked API responses, not the live APIs.
 
 ---
 

@@ -29,8 +29,11 @@ GET /api/2014/classes                        — list of 12 SRD classes
 GET /api/2014/classes/{index}                — class detail (hit die, proficiencies, spellcasting)
 GET /api/2014/backgrounds                    — list of SRD backgrounds
 GET /api/2014/backgrounds/{index}            — background detail (skills, languages, equipment, feature)
-GET /api/2014/spells?level=0&classes={name}  — cantrips for class
-GET /api/2014/spells?level=1&classes={name}  — 1st-level spells for class
+GET /api/2014/classes/{index}/levels/1       — level-1 spellcasting counts
+GET /api/2014/classes/{index}/spells         — class spell list (filter by level 0 / 1)
+GET /api/2014/spells/{index}                 — spell description (lazy)
+GET /api/2014/subclasses/{index}             — subclass detail
+GET /api/2014/features/fighter-fighting-style — fighting style options
 GET /api/2014/skills                         — full skill list with governing ability scores
 GET /api/2014/languages                      — language list
 GET /api/2014/equipment-categories/all-armor — armor list for AC calculation
@@ -90,11 +93,11 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
   baseScores: { str, dex, con, int, wis, cha },  // before racial ASIs
 
   skillProficiencies: [String],  // skill indices
-  bonusLanguages:     [String],  // language indices chosen
+  bonusLanguages:     [{ index, name }],  // languages chosen
   cantrips:           [String],  // spell indices
   level1Spells:       [String],
-  subclassChoice:     String|null,
-  fightingStyle:      String|null,
+  subclassChoice:     { index, name }|null,
+  fightingStyle:      { index, name }|null,
   equipment:          [{ index, name, quantity }],
   useGold:            Boolean,
   startGold:          Number,
@@ -146,23 +149,47 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - Race selection step: all 9 SRD races, subraces, trait details (lazy-loaded), ASIs, languages, proficiencies
 - Save to `localStorage`, character shows on home page with race icon
 
-### 🔜 Next
-- v1: Class selection step
-- v2: Ability scores (all three methods)
-- v3: Background selection
-- v4: Class-specific choices (spells, domains, etc.)
-- v5: Skills + languages
-- v6: Equipment
-- v7: Details + portrait upload
-- v8: Read-only character sheet view + print stylesheet
-- v9: Export to JSON
+### ✅ v1 — class selection (untested against live API)
+- All 12 SRD classes with hit die, saves, proficiencies, skill choices, starting equipment, spellcasting ability
+- Race step now continues into class step; changing class clears class-dependent choices
+
+### ✅ v2 — ability scores
+- Standard array, point buy (27 pts), 4d6 roll; racial + subrace bonuses shown live
+
+### ✅ v3 — background selection
+- Skills, languages, equipment, feature, and personality pools. dnd5eapi only ships Acolyte, so extra backgrounds are merged in from [Open5e](https://open5e.com) (`api.open5e.com/v1/backgrounds`, optional; untested against the live API)
+
+### ✅ v4 — class choices (level 1)
+- Cantrips + spells with counts from `/classes/{x}/levels/1` (prepared casters: ability mod + 1; wizard spellbook 6), subclass for Cleric/Sorcerer/Warlock, Fighter fighting style, lazy spell descriptions
+- Not yet covered: Ranger favored enemy, other class-specific level-1 picks
+
+### ✅ v5 — skills + languages
+- Class skill picks (disabled when already granted by race/background), bonus languages from race/subrace/background
+
+### ✅ v6 — equipment
+- Class + background starting gear incl. nested "pick from category" choices, or roll starting gold instead
+
+### ✅ v7 — details
+- Name, alignment, traits/ideal/bond/flaw (with background suggestions), portrait upload (downscaled to ≤320px JPEG)
+
+### ✅ v8 — character sheet
+- Derived stats (AC from armor/shield, HP, saves, skills, attacks, spell DC/attack), print stylesheet, jump back to edit any step
+
+### ✅ v9 — JSON export / import
+- Export from the sheet, import from the home page (never overwrites an existing character)
+
+### Known limitations
+- Level 1 characters only
+- Half-elf's two free +1 ability scores and Skill Versatility are not handled (API models them as options)
+- Ranger favored enemy, tool/instrument proficiency choices, and expertise are not covered
+- Everything beyond the happy path was tested against mocked API responses, not the live APIs
 
 ---
 
 ## Design
 
-- **Theme:** Dark, warm fantasy — not parchment, not neon. Deep navy + gold accents.
-- **Colors:** `#0d0d1a` background, `#c9aa71` gold, class-specific accent colors (upcoming).
-- **Fonts:** Cinzel for headings, Inter for body.
-- **Layout:** Mobile-first, responsive grid. Wizard step bar always visible.
-- **Validation:** Continue button disabled until step is fully valid. Impossible to advance with an invalid character.
+- **Look:** illustrated tabletop — warm parchment with a faint paper grain, iron-gall ink, a single oxblood accent, leather header bar. Flat, book-like panels with double rules and inset frames; no glows or blurs.
+- **Icons:** every race, class and background has a hand-drawn line emblem (inline SVG in `index.html`, see `RACE_ICONS` / `CLASS_ICONS` / `BG_ICONS`). No emoji.
+- **Fonts:** IM Fell English SC (headings), Alegreya (body), Alegreya Sans (UI labels) via Google Fonts, with Georgia fallbacks.
+- **Tokens:** `--paper*`, `--ink*`, `--rule*`, `--blood*`, `--leather*` at the top of the stylesheet; `@media print` swaps them to black on white.
+- **Layout:** mobile-first. Wizard step bar always visible. Continue button disabled until the step is fully valid.

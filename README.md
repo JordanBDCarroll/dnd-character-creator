@@ -205,3 +205,13 @@ The site is static files only — serve `index.html` from any web server (nginx,
 - **Open5e:** extra backgrounds come from `https://api.open5e.com/v1`; override with `window.OPEN5E_BASE`. If unreachable the app falls back to SRD-only.
 - **Fonts:** currently loaded from Google Fonts; vendor Cinzel/Inter locally if your server must not call third parties.
 - **Data:** characters live in each visitor's browser `localStorage`; the server stores nothing.
+
+### Self-hosted deployment (`self-host` branch)
+
+`docker compose up -d` runs Caddy (static files + `/api/2014` proxy) in front of the 5e-srd-api, MongoDB and Redis. Only port 80 is published; the rest sit on an internal network. Fonts are vendored in `fonts/`; `config.js` points the app at `/api/2014`.
+
+- **Update:** `./update.sh` (git pull + Caddy reload; the database is untouched).
+- **Logs:** `docker compose logs -f web api`.
+- **Turn Open5e off:** in `config.js` set `window.OPEN5E_BASE = ''` and remove `https://api.open5e.com` from `connect-src` in `deploy/Caddyfile`, then `./update.sh`. Only the SRD "Acolyte" background remains.
+- **HTTPS:** in `deploy/Caddyfile` replace `auto_https off` / `:80` with your domain (e.g. `dnd.example.com`), publish `443:443` in `compose.yaml`, and forward 80/443 to this host.
+- **Backups:** nothing server-side; characters live in browsers (use Export JSON).

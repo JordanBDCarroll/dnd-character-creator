@@ -1,0 +1,53 @@
+# Self-hosted D&D character creator: Caddy (static + reverse proxy) -> 5e-srd-api -> MongoDB.
+# Only Caddy publishes a port (80). db/cache/api live on the internal network.
+name: dnd
+
+services:
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy:/etc/caddy:ro
+      - .:/srv/site:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [public, internal]
+    depends_on:
+      api:
+        condition: service_started
+
+  api:
+    image: ghcr.io/5e-bits/5e-srd-api:latest
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: mongodb://${MONGO_HOST:-db}:27017/5e-database
+      REDIS_URL: redis://cache:6379
+      # All visitors arrive via the proxy; keep the per-IP limit generous.
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-200}
+    expose: ["3000"]
+    networks: [internal]
+    depends_on: [db, cache]
+
+  db:
+    # Prebuilt image with the 5e SRD data already loaded.
+    image: ghcr.io/5e-bits/5e-database:latest
+    restart: unless-stopped
+    expose: ["27017"]
+    networks: [internal]
+
+  cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+    expose: ["6379"]
+    networks: [internal]
+
+networks:
+  public:
+  internal:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:

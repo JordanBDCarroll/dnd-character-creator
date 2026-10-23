@@ -196,10 +196,16 @@ All responses are cached in `localStorage` under `dnd5e-api-cache` after the fir
 - **Sheet:** feature/trait/spell descriptions (loaded on expand; "Print with descriptions" opens them all), spell slots, hit dice, death saves, currency, carry weight vs capacity, armor/weapon/tool proficiencies, unarmed strike, appearance, backstory, allies, notes.
 - Characters saved by older versions are migrated automatically on load.
 
+### ✅ v11 — Player's Handbook subraces and subclasses
+- **Subraces:** Mountain Dwarf, Wood Elf (speed 35), Dark Elf / Drow (Dancing Lights), Stout Halfling, Forest Gnome (Minor Illusion), merged with the SRD ones.
+- **Subclasses:** Totem Warrior, College of Valor, Knowledge / Light / Nature / Tempest / Trickery / War domains, Circle of the Moon, Battle Master, Eldritch Knight, Shadow, Four Elements, Oaths of the Ancients and Vengeance, Beast Master, Assassin, Arcane Trickster, Wild Magic, Archfey, Great Old One, and the seven other wizard schools.
+- Mechanics are wired in where they matter: domain and oath spells (always prepared), granted armor/weapon/tool proficiencies, Knowledge and Nature domain skill/language picks, Eldritch Knight and Arcane Trickster third-caster slots and spells (wizard list), Light's bonus cantrip, Wood Elf speed.
+- **Content note:** these come from `EXTRA_SUBRACES` / `EXTRA_SUBCLASSES` in `index.html`, not the API. They contain names and rules mechanics with short paraphrased summaries rather than book text. The Player's Handbook is not open content, so if you ever publish the site publicly, consider keeping only the SRD or replacing these with licensed data.
+
 ### Known limitations
-- No multiclassing; no Mystic Arcanum / Eldritch Knight / Arcane Trickster spellcasting.
+- No multiclassing, no Mystic Arcanum. Eldritch Knight / Arcane Trickster can pick any wizard spell (school restrictions not enforced).
 - Class options not tracked as choices (Eldritch Invocations, Metamagic, Battle Master maneuvers, Pact Boon, Land druid spells, …). Use the Notes field; the feature text is on the sheet.
-- Only SRD content comes from the API (one subclass per class, one cleric domain); extra backgrounds come from Open5e.
+- The API provides SRD content only; the extra subraces/subclasses above are built in, and extra backgrounds come from Open5e. Other books (Xanathar's, Tasha's, Volo's) are not included.
 - Favored enemy language, Dragonborn/Sorcerer extra languages, and spell-slot / HP tracking during play are not handled (the sheet is a build sheet, not a play tracker).
 - Tested against mocked API responses, not the live APIs.
 

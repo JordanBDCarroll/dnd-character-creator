@@ -643,14 +643,6 @@ const DRAGON_ANCESTRY = {
 };
 const breathDice = lvl => lvl >= 16 ? 5 : lvl >= 11 ? 4 : lvl >= 6 ? 3 : 2;
 
-// Life Domain spells are always prepared (the SRD's only cleric domain)
-const LIFE_DOMAIN_SPELLS = { 1: ['bless', 'cure-wounds'], 3: ['lesser-restoration', 'spiritual-weapon'],
-  5: ['beacon-of-hope', 'revivify'], 7: ['death-ward', 'guardian-of-faith'], 9: ['mass-cure-wounds', 'raise-dead'] };
-function domainSpells(char) {
-  if (char.subclassChoice?.index !== 'life') return [];
-  return Object.entries(LIFE_DOMAIN_SPELLS).filter(([lv]) => Number(lv) <= (char.level || 1)).flatMap(([, a]) => a);
-}
-
 const FAVORED_ENEMIES = ['Aberrations', 'Beasts', 'Celestials', 'Constructs', 'Dragons', 'Elementals', 'Fey', 'Fiends',
   'Giants', 'Monstrosities', 'Oozes', 'Plants', 'Undead', 'Humanoids (two races)'];
 const FAVORED_TERRAINS = ['Arctic', 'Coast', 'Desert', 'Forest', 'Grassland', 'Mountain', 'Swamp', 'Underdark'];
@@ -658,6 +650,324 @@ const enemyCount   = lvl => lvl >= 14 ? 3 : lvl >= 6 ? 2 : 1;
 const terrainCount = lvl => lvl >= 10 ? 3 : lvl >= 6 ? 2 : 1;
 const expertiseCount = (klass, lvl) =>
   klass === 'rogue' ? (lvl >= 6 ? 4 : 2) : klass === 'bard' ? (lvl >= 10 ? 4 : lvl >= 3 ? 2 : 0) : 0;
+
+/* ================================================================
+   EXTRA OPTIONS — Player's Handbook content the free SRD data omits.
+   Names and mechanics only; descriptions are short paraphrases, not book text.
+================================================================ */
+const PHB = "Player's Handbook";
+const abi = (k, n) => ({ ability_score: { index: k }, bonus: n });
+
+const EXTRA_SUBRACES = {
+  dwarf: [{
+    index: 'mountain-dwarf', name: 'Mountain Dwarf', source: PHB, ability_bonuses: [abi('str', 2)],
+    starting_proficiencies: [{ index: 'light-armor', name: 'Light Armor' }, { index: 'medium-armor', name: 'Medium Armor' }],
+    racial_traits: [{ index: 'dwarven-armor-training', name: 'Dwarven Armor Training', desc: 'You are proficient with light and medium armor.' }],
+  }],
+  elf: [{
+    index: 'wood-elf', name: 'Wood Elf', source: PHB, ability_bonuses: [abi('wis', 1)], speed_bonus: 5,
+    starting_proficiencies: ['Longswords', 'Shortswords', 'Shortbows', 'Longbows'].map(n => ({ index: n.toLowerCase(), name: n })),
+    racial_traits: [
+      { index: 'elf-weapon-training-wood', name: 'Elf Weapon Training', desc: 'You are proficient with longswords, shortswords, shortbows and longbows.' },
+      { index: 'fleet-of-foot', name: 'Fleet of Foot', desc: 'Your base walking speed is 35 feet.' },
+      { index: 'mask-of-the-wild', name: 'Mask of the Wild', desc: 'You can try to hide even when only lightly obscured by foliage, rain, snow, mist or similar natural effects.' },
+    ],
+  }, {
+    index: 'dark-elf', name: 'Dark Elf (Drow)', source: PHB, ability_bonuses: [abi('cha', 1)],
+    cantrips: [{ index: 'dancing-lights', name: 'Dancing Lights' }],
+    starting_proficiencies: ['Rapiers', 'Shortswords', 'Hand Crossbows'].map(n => ({ index: n.toLowerCase().replace(/ /g, '-'), name: n })),
+    racial_traits: [
+      { index: 'superior-darkvision', name: 'Superior Darkvision', desc: 'Your darkvision reaches 120 feet.' },
+      { index: 'sunlight-sensitivity', name: 'Sunlight Sensitivity', desc: 'In direct sunlight you have disadvantage on attack rolls and on Perception checks that rely on sight.' },
+      { index: 'drow-magic', name: 'Drow Magic', desc: 'You know the dancing lights cantrip. At 3rd level you can cast faerie fire once per long rest, and at 5th level darkness once per long rest. Charisma is your spellcasting ability for these.' },
+      { index: 'drow-weapon-training', name: 'Drow Weapon Training', desc: 'You are proficient with rapiers, shortswords and hand crossbows.' },
+    ],
+  }],
+  halfling: [{
+    index: 'stout-halfling', name: 'Stout Halfling', source: PHB, ability_bonuses: [abi('con', 1)],
+    racial_traits: [{ index: 'stout-resilience', name: 'Stout Resilience', desc: 'You have advantage on saving throws against poison and resistance to poison damage.' }],
+  }],
+  gnome: [{
+    index: 'forest-gnome', name: 'Forest Gnome', source: PHB, ability_bonuses: [abi('dex', 1)],
+    cantrips: [{ index: 'minor-illusion', name: 'Minor Illusion' }],
+    racial_traits: [
+      { index: 'natural-illusionist', name: 'Natural Illusionist', desc: 'You know the minor illusion cantrip, using Intelligence to cast it.' },
+      { index: 'speak-with-small-beasts', name: 'Speak with Small Beasts', desc: 'You can communicate simple ideas with Small or smaller beasts.' },
+    ],
+  }],
+};
+
+// [level, feature name, short summary]
+const EXTRA_SUBCLASSES = {
+  barbarian: [{ index: 'totem-warrior', name: 'Path of the Totem Warrior', source: PHB,
+    summary: 'Draw on an animal spirit for supernatural resilience and senses.', features: [
+      [3, 'Spirit Seeker', 'You can cast beast sense and speak with animals as rituals.'],
+      [3, 'Totem Spirit', 'Choose Bear (resist almost all damage while raging), Eagle (dash and disengage as a bonus action) or Wolf (allies get advantage against enemies near you) as your totem.'],
+      [6, 'Aspect of the Beast', 'A second totem benefit: Bear (carrying and lifting), Eagle (far sight), or Wolf (tracking).'],
+      [10, 'Spirit Walker', 'You can cast commune with nature as a ritual, with a spirit animal appearing to guide you.'],
+      [14, 'Totemic Attunement', 'A third totem benefit that empowers you or your allies while you rage.'],
+    ] }],
+  bard: [{ index: 'valor', name: 'College of Valor', source: PHB,
+    summary: 'Skalds who inspire allies in battle and fight in the front line.', features: [
+      [3, 'Bonus Proficiencies', 'You gain proficiency with medium armor, shields and martial weapons.'],
+      [3, 'Combat Inspiration', 'Allies can add your Bardic Inspiration die to damage rolls or to AC against an attack.'],
+      [6, 'Extra Attack', 'You can attack twice when you take the Attack action.'],
+      [14, 'Battle Magic', 'After casting a bard spell with your action, you can make a weapon attack as a bonus action.'],
+    ] }],
+  cleric: [
+    { index: 'knowledge', name: 'Knowledge Domain', source: PHB, summary: 'Gods of lore and learning; you collect secrets and languages.', features: [
+      [1, 'Blessings of Knowledge', 'You learn two languages and gain two of Arcana, History, Nature or Religion, with double proficiency.'],
+      [2, 'Channel Divinity: Knowledge of the Ages', 'Gain proficiency with any one skill or tool for 10 minutes.'],
+      [6, 'Channel Divinity: Read Thoughts', 'Read a creature\'s surface thoughts and cast suggestion on it.'],
+      [8, 'Potent Spellcasting', 'Add your Wisdom modifier to cleric cantrip damage.'],
+      [17, 'Visions of the Past', 'Meditate to see the history of an object or place.'],
+    ] },
+    { index: 'light', name: 'Light Domain', source: PHB, summary: 'Gods of fire, the sun and truth; you burn enemies with radiance.', features: [
+      [1, 'Bonus Cantrip', 'You know the light cantrip.'],
+      [1, 'Warding Flare', 'Use your reaction to impose disadvantage on an attack against you by a creature you can see.'],
+      [2, 'Channel Divinity: Radiance of the Dawn', 'Dispel magical darkness nearby and deal radiant damage to hostile creatures.'],
+      [6, 'Improved Flare', 'Warding Flare can protect allies too.'],
+      [8, 'Potent Spellcasting', 'Add your Wisdom modifier to cleric cantrip damage.'],
+      [17, 'Corona of Light', 'An aura of sunlight that hampers enemies\' saves against fire and radiant spells.'],
+    ] },
+    { index: 'nature', name: 'Nature Domain', source: PHB, summary: 'Gods of the wilds; you command plants, animals and the elements.', features: [
+      [1, 'Acolyte of Nature', 'You learn a druid cantrip and gain one of Animal Handling, Nature or Survival.'],
+      [1, 'Bonus Proficiency', 'You gain proficiency with heavy armor.'],
+      [2, 'Channel Divinity: Charm Animals and Plants', 'Charm beasts and plant creatures nearby.'],
+      [6, 'Dampen Elements', 'Use your reaction to grant resistance to acid, cold, fire, lightning or thunder damage.'],
+      [8, 'Divine Strike', 'Once per turn add extra cold, fire or lightning damage to a weapon hit.'],
+      [17, 'Master of Nature', 'Command creatures charmed by your Channel Divinity.'],
+    ] },
+    { index: 'tempest', name: 'Tempest Domain', source: PHB, summary: 'Gods of storm and sea; you hurl thunder and lightning.', features: [
+      [1, 'Bonus Proficiencies', 'You gain proficiency with martial weapons and heavy armor.'],
+      [1, 'Wrath of the Storm', 'Use your reaction to punish an attacker with lightning or thunder damage.'],
+      [2, 'Channel Divinity: Destructive Wrath', 'Maximize lightning or thunder damage you roll.'],
+      [6, 'Thunderbolt Strike', 'Lightning damage can also push Large or smaller creatures away.'],
+      [8, 'Divine Strike', 'Once per turn add extra thunder damage to a weapon hit.'],
+      [17, 'Stormborn', 'You gain a flying speed outdoors.'],
+    ] },
+    { index: 'trickery', name: 'Trickery Domain', source: PHB, summary: 'Gods of mischief; you deceive, sneak and slip away.', features: [
+      [1, 'Blessing of the Trickster', 'Give a creature advantage on Stealth checks.'],
+      [2, 'Channel Divinity: Invoke Duplicity', 'Create an illusory double that you can cast spells through.'],
+      [6, 'Channel Divinity: Cloak of Shadows', 'Become invisible until the end of your next turn.'],
+      [8, 'Divine Strike', 'Once per turn add extra poison damage to a weapon hit.'],
+      [17, 'Improved Duplicity', 'You can create up to four illusory duplicates.'],
+    ] },
+    { index: 'war', name: 'War Domain', source: PHB, summary: 'Gods of battle; you fight on the front line and bless weapons.', features: [
+      [1, 'Bonus Proficiencies', 'You gain proficiency with martial weapons and heavy armor.'],
+      [1, 'War Priest', 'After taking the Attack action, make one weapon attack as a bonus action (limited uses).'],
+      [2, 'Channel Divinity: Guided Strike', 'Add +10 to one of your attack rolls.'],
+      [6, 'Channel Divinity: War God\'s Blessing', 'Grant +10 to an ally\'s attack roll.'],
+      [8, 'Divine Strike', 'Once per turn add extra weapon-type damage to a hit.'],
+      [17, 'Avatar of Battle', 'You gain resistance to nonmagical bludgeoning, piercing and slashing damage.'],
+    ] },
+  ],
+  druid: [{ index: 'moon', name: 'Circle of the Moon', source: PHB,
+    summary: 'Fierce shapeshifters who turn into powerful beasts.', features: [
+      [2, 'Combat Wild Shape', 'Wild Shape as a bonus action, and spend spell slots to heal in beast form.'],
+      [2, 'Circle Forms', 'Wild Shape into stronger beasts than normal (higher challenge rating).'],
+      [6, 'Primal Strike', 'Your beast-form attacks count as magical.'],
+      [10, 'Elemental Wild Shape', 'Spend two Wild Shape uses to become an elemental.'],
+      [14, 'Thousand Forms', 'Cast alter self at will.'],
+    ] }],
+  fighter: [
+    { index: 'battle-master', name: 'Battle Master', source: PHB, summary: 'Tactical combatants who use special maneuvers fuelled by superiority dice.', features: [
+      [3, 'Combat Superiority', 'You learn three maneuvers and gain four d8 superiority dice that fuel them.'],
+      [3, 'Student of War', 'You gain proficiency with one type of artisan\'s tools.'],
+      [7, 'Know Your Enemy', 'Study a creature for a minute to learn how it compares to you.'],
+      [10, 'Improved Combat Superiority', 'Your superiority dice become d10s.'],
+      [15, 'Relentless', 'Regain a superiority die when you roll initiative with none left.'],
+    ] },
+    { index: 'eldritch-knight', name: 'Eldritch Knight', source: PHB, summary: 'Warriors who weave wizard spells into their fighting.', features: [
+      [3, 'Spellcasting', 'You cast wizard spells (Intelligence), mostly abjuration and evocation, using the third-caster progression.'],
+      [3, 'Weapon Bond', 'Bond with weapons so they cannot be disarmed and can be summoned to your hand.'],
+      [7, 'War Magic', 'After casting a cantrip, make one weapon attack as a bonus action.'],
+      [10, 'Eldritch Strike', 'A weapon hit gives the target disadvantage on its next save against your spell.'],
+      [15, 'Arcane Charge', 'Teleport up to 30 feet when you use Action Surge.'],
+      [18, 'Improved War Magic', 'After casting a spell, make one weapon attack as a bonus action.'],
+    ] },
+  ],
+  monk: [
+    { index: 'shadow', name: 'Way of Shadow', source: PHB, summary: 'Ninja-like monks who use stealth and darkness.', features: [
+      [3, 'Shadow Arts', 'Spend ki to cast darkness, darkvision, pass without trace or silence; you also know minor illusion.'],
+      [6, 'Shadow Step', 'Teleport between areas of dim light or darkness and gain advantage on your next melee attack.'],
+      [11, 'Cloak of Shadows', 'Become invisible in dim light or darkness.'],
+      [17, 'Opportunist', 'Strike a creature that has just been hit by an ally.'],
+    ] },
+    { index: 'four-elements', name: 'Way of the Four Elements', source: PHB, summary: 'Monks who channel ki into elemental techniques.', features: [
+      [3, 'Disciple of the Elements', 'You learn elemental disciplines (and the Elemental Attunement ability) powered by ki.'],
+      [6, 'More Disciplines', 'You learn an additional elemental discipline.'],
+      [11, 'More Disciplines', 'You learn an additional elemental discipline.'],
+      [17, 'More Disciplines', 'You learn an additional elemental discipline.'],
+    ] },
+  ],
+  paladin: [
+    { index: 'ancients', name: 'Oath of the Ancients', source: PHB, summary: 'Defenders of light, life and wild places.', features: [
+      [3, 'Channel Divinity: Nature\'s Wrath', 'Entangle a creature with spectral vines.'],
+      [3, 'Channel Divinity: Turn the Faithless', 'Turn fey and fiends away from you.'],
+      [7, 'Aura of Warding', 'You and nearby allies resist damage from spells.'],
+      [15, 'Undying Sentinel', 'Drop to 1 hit point instead of 0 once per long rest.'],
+      [20, 'Elder Champion', 'Transform into an ancient force of nature with regeneration and spell benefits.'],
+    ] },
+    { index: 'vengeance', name: 'Oath of Vengeance', source: PHB, summary: 'Relentless hunters of those who commit grievous sins.', features: [
+      [3, 'Channel Divinity: Abjure Enemy', 'Frighten a creature and reduce its speed.'],
+      [3, 'Channel Divinity: Vow of Enmity', 'Gain advantage on attacks against one creature.'],
+      [7, 'Relentless Avenger', 'Move after an opportunity attack that hits.'],
+      [15, 'Soul of Vengeance', 'Attack as a reaction against the target of your Vow of Enmity when it attacks.'],
+      [20, 'Avenging Angel', 'Take wings and an aura of dread.'],
+    ] },
+  ],
+  ranger: [{ index: 'beast-master', name: 'Beast Master', source: PHB,
+    summary: 'Rangers bonded with an animal companion who fights alongside them.', features: [
+      [3, 'Ranger\'s Companion', 'You gain a beast companion that obeys your commands.'],
+      [7, 'Exceptional Training', 'Your companion can Dash, Disengage, Dodge or Help on your bonus action.'],
+      [11, 'Bestial Fury', 'Your companion attacks twice.'],
+      [15, 'Share Spells', 'Spells you cast on yourself also affect your companion.'],
+    ] }],
+  rogue: [
+    { index: 'assassin', name: 'Assassin', source: PHB, summary: 'Masters of infiltration and swift killing.', features: [
+      [3, 'Bonus Proficiencies', 'You gain proficiency with the disguise kit and the poisoner\'s kit.'],
+      [3, 'Assassinate', 'Advantage on attacks against creatures that haven\'t acted, and hits on surprised creatures are critical.'],
+      [9, 'Infiltration Expertise', 'Build false identities with ease.'],
+      [13, 'Impostor', 'Mimic another person\'s speech, writing and behaviour.'],
+      [17, 'Death Strike', 'Surprised targets must save or take double damage from your first-turn attack.'],
+    ] },
+    { index: 'arcane-trickster', name: 'Arcane Trickster', source: PHB, summary: 'Rogues who add enchantment and illusion magic to their tricks.', features: [
+      [3, 'Spellcasting', 'You cast wizard spells (Intelligence), mostly enchantment and illusion, using the third-caster progression.'],
+      [3, 'Mage Hand Legerdemain', 'Your mage hand becomes invisible and can steal and pick locks.'],
+      [9, 'Magical Ambush', 'Targets have disadvantage on saves against spells you cast while hidden.'],
+      [13, 'Versatile Trickster', 'Use mage hand to gain advantage on attacks against a distracted target.'],
+      [17, 'Spell Thief', 'Steal a spell cast at you and cast it yourself.'],
+    ] },
+  ],
+  sorcerer: [{ index: 'wild-magic', name: 'Wild Magic', source: PHB,
+    summary: 'Chaotic magic that can surge unpredictably.', features: [
+      [1, 'Wild Magic Surge', 'After casting a spell, you may trigger a random magical surge.'],
+      [1, 'Tides of Chaos', 'Gain advantage on one roll; the DM may then trigger a surge.'],
+      [6, 'Bend Luck', 'Spend sorcery points to add or subtract 1d4 from another creature\'s roll.'],
+      [14, 'Controlled Chaos', 'Roll twice on the surge table and pick the result.'],
+      [18, 'Spell Bombardment', 'Roll an extra damage die when you roll the maximum on a damage die.'],
+    ] }],
+  warlock: [
+    { index: 'archfey', name: 'The Archfey', source: PHB, summary: 'A patron from the fey courts; charm and trickery.', features: [
+      [1, 'Expanded Spell List', 'Fey-themed spells join your warlock spell list.'],
+      [1, 'Fey Presence', 'Charm or frighten creatures in a cube around you.'],
+      [6, 'Misty Escape', 'Turn invisible and teleport when you take damage.'],
+      [10, 'Beguiling Defenses', 'Immunity to being charmed, and you can turn a charm back on the caster.'],
+      [14, 'Dark Delirium', 'Trap a creature in an illusory realm.'],
+    ] },
+    { index: 'great-old-one', name: 'The Great Old One', source: PHB, summary: 'A patron from beyond; telepathy and madness.', features: [
+      [1, 'Expanded Spell List', 'Mind-bending spells join your warlock spell list.'],
+      [1, 'Awakened Mind', 'Communicate telepathically with creatures nearby.'],
+      [6, 'Entropic Ward', 'Impose disadvantage on an attack against you, then gain advantage on your next attack.'],
+      [10, 'Thought Shield', 'Resist psychic damage and protect your thoughts.'],
+      [14, 'Create Thrall', 'Charm an incapacitated humanoid permanently.'],
+    ] },
+  ],
+  wizard: [
+    ['abjuration', 'School of Abjuration', 'Protective magic and wards.', [
+      [2, 'Abjuration Savant', 'Copy abjuration spells into your spellbook for half the usual cost.'],
+      [2, 'Arcane Ward', 'A magical ward absorbs damage and refreshes when you cast abjurations.'],
+      [6, 'Projected Ward', 'Use your ward to shield an ally.'],
+      [10, 'Improved Abjuration', 'Add proficiency to ability checks for counterspell and dispel magic.'],
+      [14, 'Spell Resistance', 'Advantage on saves against spells and resistance to spell damage.'],
+    ]],
+    ['conjuration', 'School of Conjuration', 'Summoning and transportation.', [
+      [2, 'Conjuration Savant', 'Copy conjuration spells into your spellbook for half the usual cost.'],
+      [2, 'Minor Conjuration', 'Conjure a small nonmagical object.'],
+      [6, 'Benign Transposition', 'Teleport or swap places with an ally.'],
+      [10, 'Focused Conjuration', 'Your conjuration spells can\'t be broken by damage.'],
+      [14, 'Durable Summons', 'Creatures you summon get temporary hit points.'],
+    ]],
+    ['divination', 'School of Divination', 'Seeing the future and hidden things.', [
+      [2, 'Divination Savant', 'Copy divination spells into your spellbook for half the usual cost.'],
+      [2, 'Portent', 'Roll dice after a long rest and swap them in for attack rolls, saves or checks.'],
+      [6, 'Expert Divination', 'Casting a divination spell restores a spell slot.'],
+      [10, 'The Third Eye', 'Gain darkvision, ethereal sight, greater comprehension or see invisibility.'],
+      [14, 'Greater Portent', 'You roll three Portent dice.'],
+    ]],
+    ['enchantment', 'School of Enchantment', 'Charm and domination of minds.', [
+      [2, 'Enchantment Savant', 'Copy enchantment spells into your spellbook for half the usual cost.'],
+      [2, 'Hypnotic Gaze', 'Charm a creature that you touch with your gaze.'],
+      [6, 'Instinctive Charm', 'Redirect an attack aimed at you to a different creature.'],
+      [10, 'Split Enchantment', 'Single-target enchantments can hit a second creature.'],
+      [14, 'Alter Memories', 'Make a charmed creature forget or change its memory.'],
+    ]],
+    ['illusion', 'School of Illusion', 'Deceiving the senses.', [
+      [2, 'Illusion Savant', 'Copy illusion spells into your spellbook for half the usual cost.'],
+      [2, 'Improved Minor Illusion', 'Minor illusion can create both a sound and an image.'],
+      [6, 'Malleable Illusions', 'Reshape ongoing illusions.'],
+      [10, 'Illusory Self', 'Make an attack against you miss by leaving behind an illusion.'],
+      [14, 'Illusory Reality', 'Make a part of an illusion briefly real.'],
+    ]],
+    ['necromancy', 'School of Necromancy', 'Death, undeath and life force.', [
+      [2, 'Necromancy Savant', 'Copy necromancy spells into your spellbook for half the usual cost.'],
+      [2, 'Grim Harvest', 'Regain hit points when you kill with a spell.'],
+      [6, 'Undead Thralls', 'Animate dead creates extra undead that are stronger.'],
+      [10, 'Inured to Undeath', 'You resist necrotic damage and your hit point maximum can\'t be reduced.'],
+      [14, 'Command Undead', 'Take control of an undead creature.'],
+    ]],
+    ['transmutation', 'School of Transmutation', 'Changing the shape of things.', [
+      [2, 'Transmutation Savant', 'Copy transmutation spells into your spellbook for half the usual cost.'],
+      [2, 'Minor Alchemy', 'Temporarily change an object\'s material.'],
+      [6, 'Transmuter\'s Stone', 'Make a stone that grants a chosen benefit.'],
+      [10, 'Shapechanger', 'Cast polymorph on yourself without using a slot.'],
+      [14, 'Master Transmuter', 'Consume your stone for powerful one-time effects.'],
+    ]],
+  ].map(([index, name, summary, features]) => ({ index, name, source: PHB, summary, features })),
+};
+
+const extraSubclass = (klass, idx) => (EXTRA_SUBCLASSES[klass] || []).find(e => e.index === idx) || null;
+
+// Domain / oath spells that are always prepared. kind decides which spell level each entry gives.
+const DOMAIN_SPELLS = {
+  life:      { kind: 'cleric', spells: { 1: ['bless', 'cure-wounds'], 3: ['lesser-restoration', 'spiritual-weapon'], 5: ['beacon-of-hope', 'revivify'], 7: ['death-ward', 'guardian-of-faith'], 9: ['mass-cure-wounds', 'raise-dead'] } },
+  knowledge: { kind: 'cleric', spells: { 1: ['command', 'identify'], 3: ['augury', 'suggestion'], 5: ['nondetection', 'speak-with-dead'], 7: ['arcane-eye', 'confusion'], 9: ['legend-lore', 'scrying'] } },
+  light:     { kind: 'cleric', spells: { 1: ['burning-hands', 'faerie-fire'], 3: ['flaming-sphere', 'scorching-ray'], 5: ['daylight', 'fireball'], 7: ['guardian-of-faith', 'wall-of-fire'], 9: ['flame-strike', 'scrying'] } },
+  nature:    { kind: 'cleric', spells: { 1: ['animal-friendship', 'speak-with-animals'], 3: ['barkskin', 'spike-growth'], 5: ['plant-growth', 'wind-wall'], 7: ['dominate-beast', 'grasping-vine'], 9: ['insect-plague', 'tree-stride'] } },
+  tempest:   { kind: 'cleric', spells: { 1: ['fog-cloud', 'thunderwave'], 3: ['gust-of-wind', 'shatter'], 5: ['call-lightning', 'sleet-storm'], 7: ['control-water', 'ice-storm'], 9: ['destructive-wave', 'insect-plague'] } },
+  trickery:  { kind: 'cleric', spells: { 1: ['charm-person', 'disguise-self'], 3: ['mirror-image', 'pass-without-trace'], 5: ['blink', 'dispel-magic'], 7: ['dimension-door', 'polymorph'], 9: ['dominate-person', 'modify-memory'] } },
+  war:       { kind: 'cleric', spells: { 1: ['divine-favor', 'shield-of-faith'], 3: ['magic-weapon', 'spiritual-weapon'], 5: ['crusaders-mantle', 'spirit-guardians'], 7: ['freedom-of-movement', 'stoneskin'], 9: ['flame-strike', 'hold-monster'] } },
+  devotion:  { kind: 'paladin', spells: { 3: ['protection-from-evil-and-good', 'sanctuary'], 5: ['lesser-restoration', 'zone-of-truth'], 9: ['beacon-of-hope', 'dispel-magic'], 13: ['freedom-of-movement', 'guardian-of-faith'], 17: ['commune', 'flame-strike'] } },
+  ancients:  { kind: 'paladin', spells: { 3: ['ensnaring-strike', 'speak-with-animals'], 5: ['moonbeam', 'misty-step'], 9: ['plant-growth', 'protection-from-energy'], 13: ['ice-storm', 'stoneskin'], 17: ['commune-with-nature', 'tree-stride'] } },
+  vengeance: { kind: 'paladin', spells: { 3: ['bane', 'hunters-mark'], 5: ['hold-person', 'misty-step'], 9: ['haste', 'protection-from-energy'], 13: ['banishment', 'dimension-door'], 17: ['hold-monster', 'scrying'] } },
+};
+const domainSpellLevel = (kind, lv) => kind === 'cleric' ? (lv + 1) / 2 : ({ 3: 1, 5: 2, 9: 3, 13: 4, 17: 5 })[lv];
+const SPELL_NAME_FIX = { 'crusaders-mantle': "Crusader's Mantle", 'hunters-mark': "Hunter's Mark", 'protection-from-evil-and-good': 'Protection from Evil and Good' };
+const spellLabel = i => SPELL_NAME_FIX[i] || titleCase(i);
+function domainSpells(char) {
+  const d = DOMAIN_SPELLS[char.subclassChoice?.index];
+  if (!d) return [];
+  return Object.entries(d.spells).filter(([lv]) => Number(lv) <= (char.level || 1)).flatMap(([, a]) => a);
+}
+function allDomainSpellInfo() {
+  const out = {};
+  Object.values(DOMAIN_SPELLS).forEach(d => Object.entries(d.spells).forEach(([lv, a]) =>
+    a.forEach(i => { out[i] = { name: spellLabel(i), level: domainSpellLevel(d.kind, Number(lv)) }; })));
+  return out;
+}
+
+// Proficiencies, cantrips and picks granted by a subclass
+const SUBCLASS_PROFS = { tempest: ['Heavy Armor', 'Martial Weapons'], war: ['Heavy Armor', 'Martial Weapons'], nature: ['Heavy Armor'],
+  valor: ['Medium Armor', 'Shields', 'Martial Weapons'], assassin: ['Disguise Kit', "Poisoner's Kit"] };
+const SUBCLASS_CANTRIPS = { light: [{ index: 'light', name: 'Light' }] };
+const SUBCLASS_PICKS = {
+  knowledge: { skills: { choose: 2, options: ['arcana', 'history', 'nature', 'religion'], expertise: true }, languages: 2 },
+  nature:    { skills: { choose: 1, options: ['animal-handling', 'nature', 'survival'] } },
+};
+
+// Eldritch Knight and Arcane Trickster cast as one-third casters using the wizard list
+const THIRD_CASTER = { 'eldritch-knight': 'fighter', 'arcane-trickster': 'rogue' };
+const isThirdCaster = c => !!c.klass && THIRD_CASTER[c.subclassChoice?.index] === c.klass.index && (c.level || 1) >= 3;
+const castingAbility = c => c.klass?.spellcasting?.ability || (isThirdCaster(c) ? 'int' : null);
+function thirdCasterSc(char) {
+  const lvl = char.level, trickster = char.subclassChoice.index === 'arcane-trickster';
+  const slots = lvl >= 19 ? [4, 3, 3, 1] : lvl >= 16 ? [4, 3, 3] : lvl >= 13 ? [4, 3, 2] : lvl >= 10 ? [4, 3] : lvl >= 7 ? [4, 2] : lvl >= 4 ? [3] : [2];
+  const sc = { cantrips_known: (lvl >= 10 ? 3 : 2) + (trickster ? 1 : 0),
+               spells_known: [0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13][lvl - 1] };
+  slots.forEach((n, i) => { sc['spell_slots_level_' + (i + 1)] = n; });
+  return sc;
+}
 
 // Class level table (features, spell slots, proficiency, ASIs) — one cached call per class
 const classLevels = index => Api.get(`/classes/${index}/levels`);
@@ -674,13 +984,13 @@ function asiLevels(levels, upTo) {
 
 // What a class gets at this level: slots, cantrips, spells known/prepared
 function spellNeeds(char, L) {
-  const sc = L?.spellcasting || {};
+  const sc = isThirdCaster(char) ? thirdCasterSc(char) : (L?.spellcasting || {});
   const slots = {};
   for (let n = 1; n <= 9; n++) if (sc['spell_slots_level_' + n] > 0) slots[n] = sc['spell_slots_level_' + n];
   const maxLevel = Math.max(0, ...Object.keys(slots).map(Number));
   if (!maxLevel && !(sc.cantrips_known > 0)) return { casts: false, slots: {}, cantrips: 0, spells: 0, maxLevel: 0, label: '' };
   const k = char.klass.index, lvl = char.level || 1;
-  const mod = abilityMod(finalScore(char, char.klass.spellcasting?.ability || 'int'));
+  const mod = abilityMod(finalScore(char, castingAbility(char) || 'int'));
   let spells, label;
   if (sc.spells_known != null)  { spells = sc.spells_known; label = 'Spells Known'; }
   else if (k === 'wizard')      { spells = 6 + 2 * (lvl - 1); label = 'Spellbook Spells'; }
@@ -888,6 +1198,7 @@ const Store = {
       racialProficiencies: [],  // skill/tool picks granted by race
       toolProficiencies: [],    // tool/instrument picks granted by class
       expertise: [],            // skill indices (or 'thieves-tools')
+      subclassSkills: [],       // skill picks granted by a subclass (e.g. Knowledge domain)
       dragonAncestry: null,     // Dragonborn colour
       draconicAncestry: null,   // Draconic sorcerer colour
       racialCantrips: [],       // High Elf wizard cantrip
@@ -1128,6 +1439,13 @@ const RaceView = {
       const races = await Promise.all(list.results.map(r => Api.get(`/races/${r.index}`)));
       races.sort((a, b) => a.name.localeCompare(b.name));
 
+      // Add Player's Handbook subraces the SRD data lacks
+      races.forEach(r => {
+        const have = new Set((r.subraces || []).map(x => x.index));
+        r.subraces = [...(r.subraces || []),
+          ...(EXTRA_SUBRACES[r.index] || []).filter(e => !have.has(e.index)).map(e => ({ index: e.index, name: e.name }))];
+      });
+
       this.allRaces        = races;
       this.subraceCache    = {};
       this.traitDescCache  = {};
@@ -1160,7 +1478,10 @@ const RaceView = {
   async _loadSubraces(raceIndex) {
     const race = this.allRaces.find(r => r.index === raceIndex);
     if (!race?.subraces?.length) return;
-    const subs = await Promise.all(race.subraces.map(s => Api.get(`/subraces/${s.index}`)));
+    const extras = EXTRA_SUBRACES[raceIndex] || [];
+    extras.forEach(e => { this.subraceCache[e.index] = e; });
+    const subs = await Promise.all(race.subraces.filter(s => !extras.some(e => e.index === s.index))
+      .map(s => Api.get(`/subraces/${s.index}`)));
     subs.forEach(s => { this.subraceCache[s.index] = s; });
   },
 
@@ -1305,6 +1626,7 @@ const RaceView = {
                       ${s.racial_traits?.length
                         ? `<div class="subrace-traits">Traits: ${s.racial_traits.map(t => t.name).join(', ')}</div>`
                         : ''}
+                      ${s.source ? `<div class="subrace-traits" style="margin-top:2px;color:var(--ink-3)">${esc(s.source)}</div>` : ''}
                     </button>`;
                 }).join('')}
               </div>`}
@@ -1402,6 +1724,8 @@ const RaceView = {
       racial_traits:  sr.racial_traits || [],
       language_options: sr.language_options || null,
       starting_proficiencies: sr.starting_proficiencies || [],
+      speed_bonus: sr.speed_bonus || 0,
+      cantrips: sr.cantrips || [],
     } : null;
 
     // Advance, but never move a character backwards if they are re-editing race
@@ -1583,7 +1907,7 @@ const ClassView = {
     if (char.klass && char.klass.index !== k.index) {
       Object.assign(char, { skillProficiencies: [], cantrips: [], spells: [], subclassChoice: null, fightingStyle: null,
         equipment: [], asi: {}, toolProficiencies: [], expertise: [], draconicAncestry: null, favoredEnemies: [],
-        favoredTerrains: [], useGold: false, startGold: 0 });
+        favoredTerrains: [], subclassSkills: [], useGold: false, startGold: 0 });
     }
     char.level = Number(document.getElementById('level-select')?.value) || 1;
 
@@ -2132,25 +2456,20 @@ const ChoicesView = {
       if (!k) { App.go('class', { charId: this.charId }); return; }
       const level = char.level || 1;
 
-      const levels = await classLevels(k.index);
-      const sp = spellNeeds(char, levels[level - 1]);
+      this.levels = await classLevels(k.index);
       const byName = (a, b) => a.name.localeCompare(b.name);
       this.lists = { cantrips: [], spells: [], heCantrips: [] };
 
-      if (sp.casts) {
-        const all = await Api.get(`/classes/${k.index}/spells`);
-        this.lists.cantrips = all.results.filter(x => x.level === 0).sort(byName);
-        this.lists.spells   = all.results.filter(x => x.level >= 1 && x.level <= sp.maxLevel)
-          .sort((a, b) => a.level - b.level || byName(a, b));
-      }
-
-      const need = { sp, subclass: null, styles: [], dragon: char.race?.index === 'dragonborn',
+      const need = { sp: null, subclass: null, styles: [], dragon: char.race?.index === 'dragonborn',
                      highElf: char.subrace?.index === 'high-elf', ranger: k.index === 'ranger' };
 
       const [subLevel, subLabel] = SUBCLASS_RULES[k.index] || [99, ''];
       if (level >= subLevel) {
         const cls  = await Api.get(`/classes/${k.index}`);
         const subs = await Promise.all((cls.subclasses || []).map(x => Api.get(`/subclasses/${x.index}`)));
+        // Player's Handbook subclasses the SRD data lacks
+        (EXTRA_SUBCLASSES[k.index] || []).filter(e => !subs.some(x => x.index === e.index))
+          .forEach(e => subs.push({ index: e.index, name: e.name, desc: [e.summary], source: e.source }));
         need.subclass = { label: subLabel, options: subs };
       }
 
@@ -2167,8 +2486,8 @@ const ChoicesView = {
       this.need = need;
       const keep = (arr, list, max) => new Set((arr || []).filter(i => list.some(x => x.index === i)).slice(0, max));
       this.sel = {
-        cantrips:   keep(char.cantrips, this.lists.cantrips, sp.cantrips),
-        spells:     keep(char.spells, this.lists.spells, sp.spells),
+        cantrips:   new Set(char.cantrips || []),
+        spells:     new Set(char.spells || []),
         heCantrip:  keep(char.racialCantrips, this.lists.heCantrips, 1),
         subclass:   need.subclass?.options.some(o => o.index === char.subclassChoice?.index) ? char.subclassChoice.index : null,
         style:      need.styles.some(o => o.index === char.fightingStyle?.index) ? char.fightingStyle.index : null,
@@ -2177,6 +2496,7 @@ const ChoicesView = {
         enemies:    new Set((char.favoredEnemies || []).slice(0, enemyCount(level))),
         terrains:   new Set((char.favoredTerrains || []).slice(0, terrainCount(level))),
       };
+      await this._refreshSpells();
       this._draw();
     } catch (e) {
       document.getElementById('wizard-body').innerHTML = `
@@ -2185,6 +2505,25 @@ const ChoicesView = {
           <button class="btn btn-outline" onclick="ChoicesView._load()">Retry</button>
         </div>`;
     }
+  },
+
+  // Spell counts and lists depend on the chosen subclass (Eldritch Knight, Arcane Trickster)
+  async _refreshSpells() {
+    const char = Store.one(this.charId), k = char.klass, level = char.level || 1;
+    const tmp = { ...char, subclassChoice: this.sel.subclass ? { index: this.sel.subclass } : null };
+    const sp = spellNeeds(tmp, this.levels[level - 1]);
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    this.need.sp = sp;
+    this.lists.cantrips = []; this.lists.spells = [];
+    if (sp.casts) {
+      const all = await Api.get(`/classes/${isThirdCaster(tmp) ? 'wizard' : k.index}/spells`);
+      this.lists.cantrips = all.results.filter(x => x.level === 0).sort(byName);
+      this.lists.spells   = all.results.filter(x => x.level >= 1 && x.level <= sp.maxLevel)
+        .sort((a, b) => a.level - b.level || byName(a, b));
+    }
+    const trim = (set, list, max) => new Set([...set].filter(i => list.some(x => x.index === i)).slice(0, max));
+    this.sel.cantrips = trim(this.sel.cantrips, this.lists.cantrips, sp.cantrips);
+    this.sel.spells   = trim(this.sel.spells, this.lists.spells, sp.spells);
   },
 
   _max(key) {
@@ -2268,7 +2607,9 @@ const ChoicesView = {
       ${n.ranger ? this._chipPick('enemies', 'Favored Enemy', FAVORED_ENEMIES, enemyCount(level))
                    + this._chipPick('terrains', 'Favored Terrain', FAVORED_TERRAINS, terrainCount(level)) : ''}
       ${dom.length ? `<div class="section"><div class="section-label">Domain Spells (always prepared)</div>
-        <div class="chip-row">${dom.map(i => `<span class="chip">${esc(titleCase(i))}</span>`).join('')}</div></div>` : ''}
+        <div class="chip-row">${dom.map(i => `<span class="chip">${esc(spellLabel(i))}</span>`).join('')}</div></div>` : ''}
+      ${(SUBCLASS_CANTRIPS[this.sel.subclass] || []).length ? `<div class="section"><div class="section-label">Bonus Cantrip</div>
+        <div class="chip-row">${SUBCLASS_CANTRIPS[this.sel.subclass].map(c => `<span class="chip">${esc(c.name)}</span>`).join('')}</div></div>` : ''}
       ${sp.cantrips ? this._spellSection('cantrips', 'Cantrips', this.lists.cantrips) : ''}
       ${sp.spells ? this._spellSection('spells', sp.label, this.lists.spells) : ''}
     </div>`;
@@ -2316,9 +2657,12 @@ const ChoicesView = {
     } catch { body.textContent = 'Could not load description.'; }
   },
 
-  pickOption(group, index) {
+  async pickOption(group, index) {
     this.sel[group] = index;
-    if (group === 'subclass' && index !== 'draconic') this.sel.draconic = null;
+    if (group === 'subclass') {
+      if (index !== 'draconic') this.sel.draconic = null;
+      await this._refreshSpells();
+    }
     this._draw();
   },
 
@@ -2349,15 +2693,17 @@ const ChoicesView = {
     const n = this.need, s = this.sel;
     char.spellNames = {};
     [...this.lists.cantrips, ...this.lists.spells, ...this.lists.heCantrips].forEach(x => { char.spellNames[x.index] = x.name; });
-    Object.values(LIFE_DOMAIN_SPELLS).flat().forEach(i => { char.spellNames[i] = titleCase(i); });
+    const domInfo = allDomainSpellInfo();
+    Object.entries(domInfo).forEach(([i, d]) => { char.spellNames[i] = d.name; });
     char.spellLevels = {};
     [...this.lists.cantrips, ...this.lists.spells, ...this.lists.heCantrips].forEach(x => { char.spellLevels[x.index] = x.level; });
-    Object.entries(LIFE_DOMAIN_SPELLS).forEach(([lv, a]) => a.forEach(i => { char.spellLevels[i] = (Number(lv) + 1) / 2; }));
+    Object.entries(domInfo).forEach(([i, d]) => { char.spellLevels[i] = d.level; });
     char.spellSlots     = n.sp.slots;
     char.cantrips       = [...s.cantrips];
     char.spells         = [...s.spells];
     char.racialCantrips = [...s.heCantrip];
     const sub = n.subclass?.options.find(o => o.index === s.subclass);
+    if (char.subclassChoice?.index !== sub?.index) char.subclassSkills = [];
     char.subclassChoice = sub ? { index: sub.index, name: sub.name } : null;
     const st = n.styles.find(o => o.index === s.style);
     char.fightingStyle  = st ? { index: st.index, name: st.name } : null;
@@ -2396,6 +2742,7 @@ function fixedSkillSet(char) {
 function allSkillProfs(char) {
   const set = fixedSkillSet(char);
   (char.skillProficiencies || []).forEach(i => set.add(i));
+  (char.subclassSkills || []).forEach(i => set.add(i));
   (char.racialProficiencies || []).forEach(p => { if (p.index.startsWith('skill-')) set.add(p.index); });
   return set;
 }
@@ -2417,7 +2764,8 @@ const isSkillGroup = g => g.items.length > 0 && g.items.every(i => i.index.start
 function bonusLanguageCount(char) {
   return (char.race?.language_options?.choose || 0)
        + (char.subrace?.language_options?.choose || 0)
-       + (char.background?.language_options?.choose || 0);
+       + (char.background?.language_options?.choose || 0)
+       + (SUBCLASS_PICKS[char.subclassChoice?.index]?.languages || 0);
 }
 
 const SkillsView = {
@@ -2458,11 +2806,17 @@ const SkillsView = {
           choose: Math.min(g.choose, g.items.length) };
       }));
 
+      const subPick = SUBCLASS_PICKS[char.subclassChoice?.index]?.skills;
+      if (subPick) this.groups.push({ key: 'sub', source: 'sub', skill: true, cats: [], desc: '', choose: subPick.choose,
+        label: `${char.subclassChoice.name} Skills`,
+        items: subPick.options.map(o => ({ index: 'skill-' + o, name: SKILLS.find(x => x.index === 'skill-' + o).name })) });
+
       const saved = { 'class-skill': char.skillProficiencies || [], race: (char.racialProficiencies || []).map(p => p.index),
                       tool: (char.toolProficiencies || []).map(p => p.index) };
       this.picks = {};
       this.groups.forEach(g => {
-        const src = g.source === 'race' ? saved.race : g.skill ? saved['class-skill'] : saved.tool;
+        const src = g.source === 'race' ? saved.race : g.source === 'sub' ? (char.subclassSkills || [])
+          : g.skill ? saved['class-skill'] : saved.tool;
         this.picks[g.key] = new Set(src.filter(i => g.items.some(x => x.index === i)).slice(0, g.choose));
       });
       this.expertise = new Set(char.expertise || []);
@@ -2563,6 +2917,7 @@ const SkillsView = {
     const char = Store.one(this.charId);
     const chosen = g => g.items.filter(it => this.picks[g.key].has(it.index)).map(it => ({ index: it.index, name: it.name }));
     char.skillProficiencies = this.groups.filter(g => g.skill && g.source === 'class').flatMap(g => [...this.picks[g.key]]);
+    char.subclassSkills = this.groups.filter(g => g.source === 'sub').flatMap(g => [...this.picks[g.key]]);
     char.racialProficiencies = this.groups.filter(g => g.source === 'race').flatMap(chosen);
     char.toolProficiencies   = this.groups.filter(g => !g.skill && g.source === 'class').flatMap(chosen);
     char.expertise = [...this.expertise];
@@ -2913,6 +3268,7 @@ function deriveStats(c, gear = {}) {
   const saves = new Set((c.klass?.saving_throws || []).map(s => s.index));
   const skillProf = allSkillProfs(c);
   const expert = new Set(c.expertise || []);
+  if (SUBCLASS_PICKS[c.subclassChoice?.index]?.skills?.expertise) (c.subclassSkills || []).forEach(i => expert.add(i));
   const style = c.fightingStyle?.index;
   const kIdx = c.klass?.index;
 
@@ -2950,7 +3306,7 @@ function deriveStats(c, gear = {}) {
   attacks.push({ name: 'Unarmed Strike', bonus: mod.str + prof,
                  damage: kIdx === 'monk' ? `Martial Arts die${mod.dex >= mod.str ? fmtMod(mod.dex) : fmtMod(mod.str)} bludgeoning` : `${1 + mod.str} bludgeoning` });
 
-  const cast = c.klass?.spellcasting?.ability;
+  const cast = castingAbility(c);
   let spell = null;
   if (cast && (Object.keys(c.spellSlots || {}).length || c.cantrips?.length)) {
     const prepared = { cleric: mod[cast] + level, druid: mod[cast] + level, wizard: mod[cast] + level,
@@ -2961,7 +3317,8 @@ function deriveStats(c, gear = {}) {
 
   const weight = items.reduce((n, e) => n + (e.d.weight || 0) * (e.quantity || 1), 0);
   const perception = skills.find(s => s.index === 'skill-perception');
-  return { score, mod, prof, level, saves, skills, ac, hp: maxHP(c, mod.con), initiative: mod.dex, speed: c.race?.speed,
+  return { score, mod, prof, level, saves, skills, ac, hp: maxHP(c, mod.con), initiative: mod.dex,
+           speed: c.race?.speed != null ? c.race.speed + (c.subrace?.speed_bonus || 0) : undefined,
            passive: 10 + perception.total, attacks, spell, weight, capacity: score.str * 15,
            hitDice: `${level}d${c.klass?.hit_die || 8}` };
 }
@@ -2996,7 +3353,7 @@ const SheetView = {
         try { gear[e.index] = await Api.get(`/equipment/${e.index}`); } catch { /* sheet works without gear detail */ }
       }),
       (async () => { try { levels = await classLevels(c.klass.index); } catch { /* features list is optional */ } })(),
-      (async () => { try { if (c.subclassChoice) subLevels = await Api.get(`/subclasses/${c.subclassChoice.index}/levels`); } catch { /* optional */ } })(),
+      (async () => { try { if (c.subclassChoice && !extraSubclass(c.klass?.index, c.subclassChoice.index)) subLevels = await Api.get(`/subclasses/${c.subclassChoice.index}/levels`); } catch { /* optional */ } })(),
     ]);
     root.innerHTML = this._html(c, deriveStats(c, gear), levels, subLevels);
     root.querySelectorAll('details[data-src]').forEach(d => d.addEventListener('toggle', () => this.loadDetail(d)));
@@ -3039,6 +3396,7 @@ const SheetView = {
      ...(c.subrace?.starting_proficiencies || []).map(p => p.name),
      ...(c.racialProficiencies || []).filter(p => !p.index.startsWith('skill-')).map(p => p.name),
      ...(c.toolProficiencies || []).map(p => p.name),
+     ...(SUBCLASS_PROFS[c.subclassChoice?.index] || []),
      ...(c.background?.tool_text ? [c.background.tool_text] : [])]
       .forEach(n => { const g = profGroups[classifyProf(n)]; if (!g.includes(n)) g.push(n); });
     if ((c.expertise || []).includes('thieves-tools') && !profGroups.tools.some(n => /thieves/i.test(n))) profGroups.tools.push("Thieves' Tools");
@@ -3047,7 +3405,10 @@ const SheetView = {
     const raceTraits = [...(c.race?.traits || []), ...(c.subrace?.racial_traits || [])];
     const classFeats = levels.slice(0, c.level || 1).flatMap(l => (l.features || []).map(f => ({ ...f, level: l.level })))
       .filter(f => !/^Ability Score Improvement$/i.test(f.name));
-    const subFeats = (subLevels || []).filter(l => l.level <= (c.level || 1)).flatMap(l => (l.features || []).map(f => ({ ...f, level: l.level })));
+    const ex = extraSubclass(c.klass?.index, c.subclassChoice?.index);
+    const subFeats = ex
+      ? ex.features.filter(f => f[0] <= (c.level || 1)).map(f => ({ name: f[1], level: f[0], text: f[2] }))
+      : (subLevels || []).filter(l => l.level <= (c.level || 1)).flatMap(l => (l.features || []).map(f => ({ ...f, level: l.level })));
     const featNames = Object.entries(c.asi || {}).filter(([, e]) => e.mode === 'feat' && e.feat);
 
     const choices = [];
@@ -3058,16 +3419,19 @@ const SheetView = {
     if (c.draconicAncestry) choices.push([`Dragon Ancestor: ${titleCase(c.draconicAncestry)}`, `Damage affinity: ${DRAGON_ANCESTRY[c.draconicAncestry].damage}.`]);
     if (c.favoredEnemies?.length) choices.push(['Favored Enemy', c.favoredEnemies.join(', ')]);
     if (c.favoredTerrains?.length) choices.push(['Favored Terrain', c.favoredTerrains.join(', ')]);
-    if (c.racialCantrips?.length) choices.push(['High Elf Cantrip', c.racialCantrips.map(i => c.spellNames?.[i] || titleCase(i)).join(', ')]);
+    if (c.racialCantrips?.length) choices.push(['High Elf Cantrip', c.racialCantrips.map(i => c.spellNames?.[i] || spellLabel(i)).join(', ')]);
+    const bonusCantrips = [...(c.subrace?.cantrips || []), ...(SUBCLASS_CANTRIPS[c.subclassChoice?.index] || [])];
+    if (bonusCantrips.length) choices.push(['Bonus Cantrip' + (bonusCantrips.length > 1 ? 's' : ''), bonusCantrips.map(x => x.name).join(', ')]);
+    if (c.subclassSkills?.length) choices.push([`${c.subclassChoice.name} Skills`, c.subclassSkills.map(i => SKILLS.find(x => x.index === i)?.name || i).join(', ')]);
     if ((c.expertise || []).length) choices.push(['Expertise', c.expertise.map(i => SKILLS.find(x => x.index === i)?.name || "Thieves' Tools").join(', ')]);
 
     // ----- spells -----
     const sp = c.spellNames || {}, lv = c.spellLevels || {};
     const spellEntries = [...(c.spells || []), ...domainSpells(c)]
       .filter((i, n, a) => a.indexOf(i) === n)
-      .map(i => ({ index: i, name: sp[i] || titleCase(i), level: lv[i] || 1, domain: domainSpells(c).includes(i) }))
+      .map(i => ({ index: i, name: sp[i] || spellLabel(i), level: lv[i] || 1, domain: domainSpells(c).includes(i) }))
       .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
-    const cantripEntries = [...(c.cantrips || []), ...(c.racialCantrips || [])].map(i => ({ index: i, name: sp[i] || titleCase(i) }));
+    const cantripEntries = [...(c.cantrips || []), ...(c.racialCantrips || [])].map(i => ({ index: i, name: sp[i] || spellLabel(i) }));
     const slotRow = Object.entries(c.spellSlots || {}).map(([l, n]) =>
       `<div class="slot-line"><span class="slot-lv">Level ${l}</span>${'<span class="slot-box"></span>'.repeat(n)}</div>`).join('');
 
@@ -3153,11 +3517,12 @@ const SheetView = {
             ${classFeats.length ? `<div class="sheet-text" style="margin-top:8px"><b>${esc(c.klass?.name || 'Class')} features</b></div>
               ${classFeats.map(f => this._feat(`${f.name} (Lv ${f.level})`, `/features/${f.index}`)).join('')}` : ''}
             ${subFeats.length ? `<div class="sheet-text" style="margin-top:8px"><b>${esc(c.subclassChoice.name)}</b></div>
-              ${subFeats.map(f => this._feat(`${f.name} (Lv ${f.level})`, `/features/${f.index}`)).join('')}` : ''}
+              ${subFeats.map(f => f.text ? this._feat(`${f.name} (Lv ${f.level})`, null, f.text)
+                : this._feat(`${f.name} (Lv ${f.level})`, `/features/${f.index}`)).join('')}` : ''}
             ${featNames.length ? `<div class="sheet-text" style="margin-top:8px"><b>Feats</b></div>
               ${featNames.map(([l, e]) => this._feat(`${e.feat.name} (Lv ${l})`, `/feats/${e.feat.index}`)).join('')}` : ''}
             ${raceTraits.length ? `<div class="sheet-text" style="margin-top:8px"><b>${esc(c.race?.name || 'Racial')} traits</b></div>
-              ${raceTraits.map(t => this._feat(t.name, `/traits/${t.index}`)).join('')}` : ''}
+              ${raceTraits.map(t => t.desc ? this._feat(t.name, null, t.desc) : this._feat(t.name, `/traits/${t.index}`)).join('')}` : ''}
             ${c.background?.feature ? `<div class="sheet-text" style="margin-top:8px"><b>Background feature</b></div>
               ${this._feat(c.background.feature.name, null, (c.background.feature.desc || []).join('\n\n'))}` : ''}
           </div>

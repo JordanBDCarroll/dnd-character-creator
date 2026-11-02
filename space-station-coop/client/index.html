@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dead Orbit — Co-op Salvage</title>
+<style>
+  :root { --amber:#ffb53a; --cyan:#5de8ff; --red:#ff4a3a; --bg:#05080b; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:#000; color:#cfe8ee; font-family:"Courier New",ui-monospace,monospace; overflow:hidden; user-select:none; }
+  canvas#view { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #hud { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .6s; }
+  #hud.on { opacity:1; }
+  #cross { position:absolute; left:50%; top:50%; width:5px; height:5px; margin:-2.5px; border-radius:50%; background:rgba(255,255,255,.55); box-shadow:0 0 6px rgba(255,255,255,.4); transition:all .15s; }
+  #cross.hot { width:14px; height:14px; margin:-7px; background:transparent; border:2px solid var(--amber); box-shadow:0 0 12px var(--amber); }
+  #prompt { position:absolute; left:50%; top:57%; transform:translateX(-50%); text-align:center; font-size:15px; letter-spacing:.5px; text-shadow:0 0 8px #000, 0 2px 2px #000; }
+  #prompt b { color:var(--amber); }
+  #prompt small { display:block; color:#8ab; margin-top:3px; font-size:12px; }
+  .bars { position:absolute; left:22px; bottom:22px; width:230px; }
+  .bar { height:10px; margin-top:7px; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.2); position:relative; }
+  .bar i { position:absolute; inset:0; width:100%; transform-origin:left; transition:transform .1s; }
+  .bar span { position:absolute; left:-18px; top:-3px; font-size:11px; color:#9bb; }
+  #hp i { background:linear-gradient(90deg,#c0281c,#ff5a3a); } #st i { background:linear-gradient(90deg,#c9a021,#ffd75a); } #bt i { background:linear-gradient(90deg,#2a8bb0,#7fe7ff); }
+  #quota { position:absolute; right:22px; top:20px; text-align:right; text-shadow:0 0 8px #000; }
+  #quota .big { font-size:30px; color:var(--cyan); letter-spacing:1px; }
+  #quota .sub { font-size:12px; color:#8ab; }
+  #quota .meter { width:200px; height:6px; margin:6px 0 0 auto; background:rgba(0,0,0,.6); border:1px solid rgba(93,232,255,.4); }
+  #quota .meter i { display:block; height:100%; background:var(--cyan); width:0%; transition:width .5s; box-shadow:0 0 10px var(--cyan); }
+  #players { position:absolute; left:22px; top:20px; font-size:13px; text-shadow:0 0 6px #000; }
+  #players div { margin-bottom:4px; display:flex; align-items:center; gap:7px; } #players .dot { width:8px; height:8px; border-radius:50%; background:#456; } #players .dot.talk { background:#5dff8a; box-shadow:0 0 8px #5dff8a; } #players .dead { opacity:.45; text-decoration:line-through; }
+  #feed { position:absolute; right:22px; bottom:22px; text-align:right; font-size:13px; text-shadow:0 0 6px #000; } #feed div { margin-top:3px; animation:fe 6s forwards; } @keyframes fe { 0%,80%{opacity:1} 100%{opacity:0} }
+  #center { position:absolute; left:0; right:0; top:22%; text-align:center; font-size:46px; letter-spacing:6px; text-shadow:0 0 20px currentColor; opacity:0; transition:opacity .4s; } #center.on { opacity:1; } #center small { display:block; font-size:16px; letter-spacing:2px; margin-top:8px; color:#bcd; }
+  #mic { position:absolute; left:22px; bottom:118px; font-size:12px; color:#9bb; }
+  #hint { position:absolute; left:50%; top:10px; white-space:nowrap; transform:translateX(-50%); font-size:11px; color:#789; }
+  #menu, #pause { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; background:radial-gradient(ellipse at center, rgba(5,12,18,.78), rgba(0,0,0,.95)); z-index:10; text-align:center; }
+  #pause { display:none; background:rgba(0,0,0,.6); cursor:pointer; }
+  h1 { font-size:54px; margin:0; letter-spacing:12px; color:#e8f6fa; text-shadow:0 0 30px rgba(93,232,255,.55); font-weight:700; }
+  h1 em { color:var(--amber); font-style:normal; }
+  .tag { color:#7fa; letter-spacing:4px; font-size:13px; margin:10px 0 28px; }
+  .field { margin:6px; } .field label { display:block; font-size:11px; color:#789; letter-spacing:2px; margin-bottom:4px; }
+  input { background:#0a1218; border:1px solid #2c4a58; color:#dff; padding:10px 12px; font:inherit; font-size:16px; width:260px; text-align:center; outline:none; }
+  input:focus { border-color:var(--cyan); box-shadow:0 0 14px rgba(93,232,255,.3); }
+  button { margin-top:18px; background:var(--amber); color:#120c00; border:0; padding:13px 38px; font:inherit; font-size:17px; font-weight:700; letter-spacing:4px; cursor:pointer; box-shadow:0 0 24px rgba(255,181,58,.35); }
+  button:hover { filter:brightness(1.12); } button:disabled { opacity:.5; cursor:wait; }
+  .help { margin-top:30px; color:#789; font-size:12px; line-height:1.9; max-width:560px; } .help b { color:#cfe; } #err { color:var(--red); min-height:20px; margin-top:12px; font-size:13px; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="hud">
+  <div id="cross"></div>
+  <div id="prompt"></div>
+  <div id="players"></div>
+  <div id="quota"><div class="sub" id="roundlbl">ROUND 1</div><div class="big" id="bank">$0</div><div class="sub" id="quotalbl">QUOTA $600</div><div class="meter"><i id="qbar"></i></div></div>
+  <div class="bars">
+    <div class="bar" id="hp"><span>HP</span><i></i></div><div class="bar" id="st"><span>ST</span><i></i></div><div class="bar" id="bt"><span>FL</span><i></i></div>
+  </div>
+  <div id="mic"></div>
+  <div id="feed"></div>
+  <div id="center"></div>
+  <div id="hint">WASD move · SHIFT sprint · SPACE jump · E grab · LMB throw · Q drop · F flashlight · V mute mic</div>
+</div>
+<div id="pause"><div><h1 style="font-size:34px">PAUSED</h1><div class="tag">CLICK TO RESUME</div></div></div>
+<div id="menu">
+  <h1>DEAD <em>ORBIT</em></h1>
+  <div class="tag">CO-OP SALVAGE · PROXIMITY VOICE · NOBODY SURVIVES ALONE</div>
+  <div class="field"><label>CALLSIGN</label><input id="name" maxlength="14" placeholder="Crewmate" autocomplete="off"></div>
+  <div class="field"><label>STATION CODE (friends type the same code)</label><input id="room" maxlength="20" placeholder="alpha" autocomplete="off"></div>
+  <button id="go">ENTER STATION</button>
+  <div id="err"></div>
+  <div class="help"><b>Mission:</b> scavenge the derelict station, haul salvage back to the dropship pad, hit the quota.<br>
+  Something hunts by <b>sound</b> and <b>light</b> — sprinting, thrown junk and your <b>microphone</b> all draw it in.<br>
+  Use <b>headphones</b>. Your teammates' voices are 3D: if you can hear them, they're close.</div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "/three/build/three.module.js", "three/addons/": "/three/examples/jsm/" } }
+</script>
+<script type="module" src="/client/main.js"></script>
+</body>
+</html>
